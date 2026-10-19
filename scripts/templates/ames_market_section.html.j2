@@ -1,0 +1,33 @@
+<section class="card recommend" id="market-2026">
+  <div class="section-head"><div><p class="kicker">2026 / Market-adjusted scenarios</p><h2>Bring the historical model to a published market period</h2></div><button class="button" data-download="market">Download market scenarios</button></div>
+  <p>The portal automatically produces a <strong>market-adjusted estimate</strong> using the latest published period in its bundled index snapshot, currently {{ market.target_period }}. It uses a separate compact {{ market.selected_model }} model trained on historical prices put into a common reference period, then applies the published Ames market change.</p>
+  <div class="metrics">
+    <div class="metric"><strong>{{ market.target_period }}</strong><span>April–June 2026 · observed index period</span></div>
+    <div class="metric"><strong>{{ market.target_index | decimal }}</strong><span>Ames metro FHFA all-transactions index</span></div>
+    <div class="metric"><strong>× {{ market.adjustment_factor | decimal }}</strong><span>Relative to April–June 2010</span></div>
+    <div class="metric"><strong>Unknown</strong><span>2026 property-level accuracy</span></div>
+  </div>
+  <div class="note warm">This is a market-adjusted scenario for older homes with their supplied characteristics held fixed. The project has no 2026 property sales to measure accuracy. The original report’s MAE, R², and uncertainty intervals apply to historical evaluation, and cannot be transferred to 2026.</div>
+  <div class="grid">
+    <div><h3>Try the market adjustment</h3><label for="reference-price-input">Home value at the April–June 2010 market level (USD)</label><p><input id="reference-price-input" type="number" min="0" max="2000000" step="1000" value="200000" style="max-width:100%;padding:10px;border:1px solid #bdcad9;border-radius:5px;font:inherit"></p><p class="recommendation"><span id="reference-illustration">$200,000</span> × {{ '%.3f' | format(market.adjustment_factor) }} = <strong id="market-illustration">{{ market.illustration_price | money }}</strong></p><p class="small muted">A scenario at the {{ market.target_period }} market level. This calculator applies the index to an entered reference value; the portal predicts that reference value from the home’s characteristics.</p></div>
+    <div><h3>What the model learns</h3><p class="small muted">For every historical training sale:</p><pre><code>reference price = recorded price
+  × index(2010Q2) / index(sale quarter)
+
+2026 scenario = predicted reference price
+  × {{ market.target_index }} / {{ market.reference_index }}</code></pre><p class="small muted">The companion model uses {{ market.feature_columns | length }} inputs, excluding sale year and month. It trains on the same {{ market.fit_count | integer }} sales from 2006–2009, with the original compact architecture and no new parameter search. Its fit took {{ market.fit_seconds | decimal }} seconds.</p></div>
+  </div>
+  <div class="chart">{{ market.chart | safe }}</div>
+  <p class="caption">Ames metropolitan area · Not seasonally adjusted · All-transactions index based on sales and appraisal data · Historical index observations use the revised vintage retrieved for this run. Latest source period: {{ market.index_source.latest_period }}. Source release: {{ market.index_source.source_release_date }}. <a href="{{ market.index_source.reference_url }}" target="_blank" rel="noreferrer">FHFA index through FRED</a> · <a href="{{ market.index_source.source_url }}" target="_blank" rel="noreferrer">Original FHFA CSV</a>.</p>
+  <h3>Three example properties</h3><div class="table-scroll"><table><thead><tr><th>Source row</th><th>Neighborhood</th><th class="num">Reference estimate · 2010Q2</th><th class="num">2026Q2 scenario</th></tr></thead><tbody>{% for row in market.examples %}<tr><td>{{ row.Order | int }}</td><td>{{ row.Neighborhood }}</td><td class="num">{{ row.reference_price_2010_q2_usd | money }}</td><td class="num">{{ row.scenario_2026_q2_usd | money }}</td></tr>{% endfor %}</tbody></table></div>
+  <p class="caption">These are the existing example homes from the 2010 holdout. No actual 2026 prices are available. The download includes all {{ rows | integer }} original properties, spanning training and test rows, as illustrative scenarios rather than a 2026 test set.</p>
+  <details><summary>Historical check of the companion model and simplified portal</summary><p>{{ market.evaluation_note }} The common-period prediction is converted back to each 2010 property’s actual sale quarter before comparing with the recorded price.</p><div class="table-scroll"><table><thead><tr><th>2010 retrospective check</th><th class="num">Homes</th><th class="num">MAE</th><th class="num">RMSE</th><th class="num">R²</th></tr></thead><tbody><tr><td>Companion model with full inputs</td><td class="num">{{ market.test_count }}</td><td class="num">{{ market.historical_2010_full_inputs.mae | money }}</td><td class="num">{{ market.historical_2010_full_inputs.rmse | money }}</td><td class="num">{{ market.historical_2010_full_inputs.r2 | decimal }}</td></tr><tr><td>Companion model with simplified portal inputs</td><td class="num">{{ market.simplified_validation.n }}</td><td class="num">{{ market.simplified_validation.mae | money }}</td><td class="num">{{ market.simplified_validation.rmse | money }}</td><td class="num">{{ market.simplified_validation.r2 | decimal }}</td></tr></tbody></table></div><p>No comparison here establishes 2026 accuracy. The metropolitan trend is shared across properties; individual neighborhoods and property types can behave differently. No renovations, aging, or changes in property condition are forecast.</p></details>
+  <details><summary>Reproduce the market model and make CSV estimates</summary><pre><code>source ~/myenv/bin/activate
+python scripts/train_market_adjustment.py
+python scripts/predict_market_prices.py \
+  --input models/ames/example_properties.csv \
+  --target-period 2026Q2 \
+  --output reports/example_market_predictions.csv
+
+# Refresh this report without retraining:
+python scripts/train_models.py --report-only</code></pre><p>Source snapshot: <code>dat/market/ames_hpi.csv</code> with provenance in <code>dat/market/source.json</code>. The separate reference model and metadata are in <code>models/ames_market/</code>. Only published index quarters in the saved snapshot are accepted; future quarters are not guessed.</p></details>
+</section>

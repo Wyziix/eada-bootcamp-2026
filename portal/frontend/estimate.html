@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#173f35">
+  <meta name="description" content="Get to know a home's value. Explore the Ames Housing model with simple questions, five quality levels, and an interactive neighborhood map.">
+  <title>Ownly — A little detail. A clearer picture.</title>
+  <link rel="icon" href="./assets/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="./vendor/leaflet/leaflet.css">
+  <link rel="stylesheet" href="./style.css">
+  <script defer src="./vendor/leaflet/leaflet.js"></script>
+  <script type="module" src="./app.mjs"></script>
+</head>
+<body>
+  <a class="skip-link" href="#estimator">Skip to estimator</a>
+  <header class="site-header wrap">
+    <a class="brand" href="./" aria-label="Ownly home"><span class="brand-icon"><svg viewBox="0 0 28 28" fill="none"><path d="M5 13 14 5l9 8v11H5Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M11 24v-8h6v8" stroke="currentColor" stroke-width="1.8"/></svg></span>ownly<span class="brand-dot">.</span></a>
+    <nav aria-label="Main navigation"><a href="/">Find a home</a><a class="active" href="#estimator">Home valuation</a><button data-dialog="how-dialog">How it works <span aria-hidden="true">↗</span></button><button data-dialog="model-dialog">Behind the model <span aria-hidden="true">↗</span></button></nav>
+    <a class="header-location" href="/#my-listings">List a property ↗</a>
+  </header>
+  <main class="wrap">
+    <section class="hero" aria-labelledby="hero-title">
+      <div><div class="eyebrow"><span class="tiny-line"></span> HOME VALUE, MADE HUMAN</div><h1 id="hero-title">A little detail.<br>A <em>clearer</em> picture.</h1><p>You know the home. We’ll do the number crunching.<br>Explore its estimated value in a few simple steps.</p></div>
+      <div class="hero-note"><svg viewBox="0 0 120 90" aria-hidden="true"><path d="M8 64 57 24l48 40M21 54v28h72V54M40 82V58h20v24M72 58h10v11H72ZM72 33V19h13v24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M2 85h111M106 46l5-8M99 26l-1-8M113 65h6" stroke="currentColor" stroke-width="1.5"/></svg><span>A home is more<br>than a number.</span></div>
+    </section>
+    <div class="dataset-banner"><span class="banner-icon" aria-hidden="true">i</span><p><strong>A clearer view of your home’s value.</strong> Estimates are automatically adjusted using the latest published Ames housing index.</p><button data-dialog="model-dialog" aria-label="Learn about the price model and market adjustment">About the data <span aria-hidden="true">↗</span></button></div>
+    <div class="workspace" id="estimator">
+      <section class="form-panel panel" aria-labelledby="form-title">
+        <div class="panel-heading"><div class="section-kicker">01 <span>THE HOME</span></div><button id="reset-button" class="text-button">Reset <span aria-hidden="true">↺</span></button></div>
+        <h2 id="form-title">Tell us a little about it.</h2><p class="section-intro">Just the things you probably already know.</p>
+        <form id="home-form" novalidate>
+          <fieldset><legend>What kind of home?</legend><div class="home-types">
+            <label class="type-card"><input type="radio" name="type" value="house" checked><svg viewBox="0 0 32 30" aria-hidden="true"><path d="m3 14 13-11 13 11M7 11v16h18V11M13 27v-9h6v9M10 14h3M20 14h3"/></svg><span>House</span></label>
+            <label class="type-card"><input type="radio" name="type" value="townhouse"><svg viewBox="0 0 32 30" aria-hidden="true"><path d="M3 27V8l7-5 7 5v19M17 27V8l6-5 6 5v19M1 27h30M8 27v-7h4v7M21 27v-7h4v7M7 11h5M7 15h5M21 11h4M21 15h4"/></svg><span>Townhouse</span></label>
+            <label class="type-card"><input type="radio" name="type" value="apartment"><svg viewBox="0 0 32 30" aria-hidden="true"><path d="M6 27V3h20v24M3 27h26M12 27v-6h8v6M11 8h2M19 8h2M11 13h2M19 13h2M11 17h2M19 17h2"/></svg><span>Apartment <small>Coming later</small></span></label>
+          </div><p class="field-error" id="type-error" hidden></p></fieldset>
+          <div class="field-block"><div class="label-row"><label for="area">Living area <span class="label-hint">above ground</span></label><div class="unit-switch" role="group" aria-label="Living area units"><button type="button" id="sqft-unit" aria-pressed="true">sq ft</button><button type="button" id="sqm-unit" aria-pressed="false">m²</button></div></div><div class="area-input"><input type="number" id="area" name="area" min="300" max="5000" step="1" value="1500" inputmode="numeric" aria-describedby="area-hint area-error"><span id="area-unit-label">sq ft</span></div><input type="range" id="area-range" min="300" max="5000" step="25" value="1500" aria-label="Adjust living area"><div class="range-labels"><span id="range-min">300 sq ft</span><span id="range-max">5,000 sq ft</span></div><p class="field-error" id="area-error" hidden></p><span id="area-hint" class="sr-only">Finished indoor space, excluding the basement and garage.</span></div>
+          <div class="room-row">
+            <div class="field-block"><label for="bedrooms">Bedrooms</label><div class="stepper"><button type="button" data-step="bedrooms:-1" aria-label="Fewer bedrooms">−</button><input type="number" id="bedrooms" min="0" max="8" value="3" inputmode="numeric" aria-describedby="bedrooms-error"><button type="button" data-step="bedrooms:1" aria-label="More bedrooms">+</button></div><p class="field-error" id="bedrooms-error" hidden></p></div>
+            <div class="field-block"><label for="bathrooms">Full bathrooms</label><div class="stepper"><button type="button" data-step="bathrooms:-1" aria-label="Fewer bathrooms">−</button><input type="number" id="bathrooms" min="0" max="5" value="2" inputmode="numeric" aria-describedby="bathrooms-error"><button type="button" data-step="bathrooms:1" aria-label="More bathrooms">+</button></div><p class="field-error" id="bathrooms-error" hidden></p></div>
+          </div>
+          <fieldset class="quality-field"><legend>How would you describe the finishes? <span class="label-hint">Pick what feels closest.</span></legend><div class="quality-options" id="quality-options"></div><p class="quality-description" id="quality-description"></p><p class="field-error" id="quality-error" hidden></p></fieldset>
+          <div class="room-row extra-row"><div class="field-block"><label for="year">Year built</label><input type="number" id="year" min="1872" max="2010" value="1970" inputmode="numeric" aria-describedby="year-error"><p class="field-error" id="year-error" hidden></p></div><div class="field-block"><label for="garage">Garage spaces</label><select id="garage" aria-describedby="garage-error"><option value="0">No garage</option><option value="1">1 car</option><option value="2" selected>2 cars</option><option value="3">3 cars</option><option value="4">4 cars</option></select><p class="field-error" id="garage-error" hidden></p></div></div>
+          <p class="field-note" id="property-date-note">Supports homes built by 2010. The estimate uses the details you provide and assumptions about other features.</p>
+          <button class="estimate-button" id="estimate-button" type="submit" disabled><span id="estimate-button-label">Loading the model…</span><span aria-hidden="true">↗</span></button>
+          <p class="privacy-note"><svg viewBox="0 0 16 16" aria-hidden="true"><rect x="3" y="7" width="10" height="7" rx="2"/><path d="M5 7V5a3 3 0 0 1 6 0v2"/></svg> No sign-up. Property details stay in your browser.</p>
+        </form>
+      </section>
+      <div class="right-column">
+        <section class="location-panel panel" aria-labelledby="location-title"><div class="panel-heading"><div class="section-kicker">02 <span>THE NEIGHBORHOOD</span></div><span class="location-tag">AMES, IA</span></div><h2 id="location-title">Put it on the map.</h2><p class="section-intro">Pick a neighborhood. We’ll take it from there.</p>
+          <label class="sr-only" for="neighborhood">Neighborhood</label><div class="neighborhood-select"><svg viewBox="0 0 20 24" aria-hidden="true"><path d="M18 9c0 6-8 13-8 13S2 15 2 9a8 8 0 1 1 16 0Z"/><circle cx="10" cy="9" r="2.5"/></svg><select id="neighborhood" aria-describedby="neighborhood-error" disabled><option>Loading neighborhoods…</option></select></div><p class="field-error" id="neighborhood-error" hidden></p>
+          <div class="map-shell"><div id="map" aria-label="Map of Ames neighborhood centers"></div><div id="map-fallback" hidden>Map tiles are unavailable. You can still select any neighborhood above.</div><button id="map-reset" class="map-reset" type="button" aria-label="Show all neighborhoods">⌖ <span>Show all</span></button><div class="map-caption"><span class="map-dot"></span><span>Neighborhood centers · approximate locations</span></div></div>
+          <div class="neighborhood-detail"><div><strong id="neighborhood-name">North Ames</strong><span id="neighborhood-count">Loading neighborhood details…</span></div><span class="detail-icon" aria-hidden="true">⌁</span></div>
+        </section>
+        <section class="result-panel" id="result-panel" aria-labelledby="result-title" aria-busy="true">
+          <div class="result-top"><span class="section-kicker">03 <span>THE BIG PICTURE</span></span><span class="result-spark" aria-hidden="true">✳</span></div>
+          <h2 id="result-title">Let’s find its ballpark.</h2><p id="result-subtitle">A few familiar details. A model-backed estimate.</p>
+          <div id="result-empty"><div class="empty-price">$<span>— — —</span></div><p>Your estimate will appear right here.</p></div>
+          <div id="result-content" hidden>
+            <div class="estimate-price" id="price"></div><div class="price-period" id="result-price-period">Market-adjusted estimate · USD</div>
+            <div id="market-breakdown" class="market-breakdown">
+              <div><span id="reference-period-label">Reference value</span><strong id="reference-price"></strong></div>
+              <div><span>Ames market adjustment</span><strong id="market-factor"></strong></div>
+              <p><span id="market-index-date"></span> · <a href="https://fred.stlouisfed.org/data/ATNHPIUS11180Q" target="_blank" rel="noreferrer">FHFA index source ↗</a></p>
+            </div>
+            <div class="result-divider"></div><div class="result-summary" id="result-summary"></div>
+            <div class="result-context" id="market-perspective"><span>About accuracy</span><p>Accuracy for the adjusted period has not been measured. Renovations, aging, and local shifts can change a home’s actual price.</p></div>
+            <button id="download-button" type="button">Save this estimate <span aria-hidden="true">↓</span></button>
+          </div>
+          <div id="stale-message" class="stale-message" hidden>Details changed. Update the estimate to see the new result.</div>
+          <p id="result-status" role="status" aria-live="polite"></p>
+          <div class="result-footnote" id="result-footnote">A market-adjusted estimate for older Ames homes. Individual properties can move differently from the metropolitan index.</div>
+        </section>
+      </div>
+    </div>
+    <section class="explain-strip" aria-label="Our approach"><div><span class="explain-number">01 /</span><h3>Everyday questions.</h3><p>No property jargon. Just size, rooms, finishes, and a place on the map.</p></div><div><span class="explain-number">02 /</span><h3>A real predictive model.</h3><p>Built on 2,589 historical Ames sales. The saved model runs right in your browser.</p></div><div><span class="explain-number">03 /</span><h3>Room for uncertainty.</h3><p>A useful starting point, with the assumptions and model limits in plain sight.</p></div></section>
+    <details class="assumptions-panel" id="assumptions"><summary><span>What are we filling in for you?</span><span class="summary-plus" aria-hidden="true">+</span></summary><div class="assumptions-body"><p>The model uses 75 property inputs. We start from a representative training home of the same type in your chosen neighborhood, then replace its main details with your answers. If that combination has no training homes, we use a representative home of that type elsewhere in Ames.</p><p>Basement, lot, half bathrooms, renovation year, maintenance condition, and other unasked details come from that example. Garage area is assumed at 240 sq ft per car. These choices affect the estimate. Market change is applied automatically while holding these characteristics fixed.</p><dl id="assumption-details"></dl><p class="small-note">The five finish levels map to the model’s material-quality scores of 2, 4, 5, 7, and 9 out of 10. Maintenance condition is a separate, automatically filled field. The estimate download includes all supplied and assumed model inputs, the latest available index period, and the market-index source.</p></div></details>
+    <div class="load-error" id="load-error" role="alert" hidden></div>
+  </main>
+  <footer class="wrap"><div class="footer-brand">ownly<span>.</span><span class="footer-tagline">A little more insight. A little less guesswork.</span></div><span><a href="/">Back to Ownly ↗</a></span></footer>
+  <dialog id="how-dialog" aria-labelledby="how-title"><button class="dialog-close" aria-label="Close dialog">×</button><span class="eyebrow">A QUICK TOUR</span><h2 id="how-title">From home to estimate.</h2><ol class="how-list"><li><strong>Describe the home.</strong><p>Choose a house or townhouse built by 2010. Enter its living area, rooms, construction year, garage spaces, and finishes. Use square feet or square meters.</p></li><li><strong>Find the neighborhood.</strong><p>Use the map or the neighborhood dropdown. Markers show approximate centers.</p></li><li><strong>Get an adjusted estimate.</strong><p>The latest published Ames housing index is applied automatically. Check its date and the assumed details, then save the estimate or change a detail and calculate again.</p></li></ol><p class="dialog-note">Your property inputs are processed locally. The map requests tiles from OpenStreetMap, which receives ordinary connection and viewport information.</p></dialog>
+  <dialog id="model-dialog" aria-labelledby="model-title">
+    <button class="dialog-close" aria-label="Close dialog">×</button><span class="eyebrow">BEHIND THE NUMBER</span><h2 id="model-title">A model with context.</h2>
+    <p>The <strong>histogram gradient boosting</strong> model learns from 2,589 Ames sales from 2006–2009. Every training price is first adjusted to a common market reference using the FHFA index. The model learns property values at that level, then the latest published market adjustment is applied automatically. Sale year and month are excluded from its 75 property inputs.</p>
+    <h3>Historical check · simplified form</h3><div class="dialog-metrics"><div><strong id="dialog-mae">—</strong><span>2010 average absolute error</span></div><div><strong id="dialog-within">—</strong><span>2010 sales within 20%</span></div></div>
+    <p>These figures describe the simplified form on 317 supported 2010 houses and townhouses. This year was already examined in the original benchmark. Asking fewer questions increases uncertainty. These historical figures do not measure accuracy at the latest market level.</p>
+    <h3>Automatic market adjustment</h3><p><strong id="dialog-market-calculation"></strong></p><p id="dialog-market-description"></p>
+    <p><strong>Accuracy for the adjusted period is unknown.</strong> There are no recent property-level sale records in this project. A retrospective 2010 check uses revised index values and actual sale-quarter indices, so it is not an as-of-date forecast. An average historical error is not an individual prediction interval.</p>
+    <h3>Where it applies</h3><p>Ames houses and townhouses built by 2010, with the supplied property characteristics held fixed. Renovations, aging, and neighborhood-specific price changes are not predicted. Individual apartments, newer buildings, and other cities remain unsupported.</p>
+    <p class="dialog-links"><a href="https://fred.stlouisfed.org/data/ATNHPIUS11180Q" target="_blank" rel="noreferrer">FHFA market-index data ↗</a><a href="https://jse.amstat.org/v19n3/decock.pdf" target="_blank" rel="noreferrer">Ames Housing study ↗</a><a href="https://github.com/topepo/AmesHousing" target="_blank" rel="noreferrer">Coordinate source ↗</a></p><p class="small-note">Browser inference is checked against Python. The portal uses the bundled index snapshot and runs without retraining.</p>
+  </dialog>
+</body>
+</html>

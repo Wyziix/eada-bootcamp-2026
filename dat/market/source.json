@@ -1,0 +1,18 @@
+{
+  "title": "FHFA All-Transactions House Price Index for Ames, IA (MSA)",
+  "msa_code": "11180",
+  "fred_series": "ATNHPIUS11180Q",
+  "source_url": "https://www.fhfa.gov/hpi/download/quarterly_datasets/hpi_at_metro.csv",
+  "reference_url": "https://fred.stlouisfed.org/data/ATNHPIUS11180Q",
+  "publisher": "U.S. Federal Housing Finance Agency",
+  "frequency": "Quarterly",
+  "seasonal_adjustment": "Not seasonally adjusted",
+  "units": "Index 1995Q1 = 100",
+  "source_release_date": "2026-08-25",
+  "retrieved_at": "2026-10-19T11:34:10.698754+02:00",
+  "full_download_sha256": "07e3e98998806df830fd1ec141dbf234e66d66675258ecd705078028aafedee0",
+  "snapshot_sha256": "661957f49a4ba78e6b11ff966dc78ac58ec92647411a63814891b784349d3383",
+  "extraction": "Rows for MSA 11180 with a published numeric index; no interpolation or extrapolation. Historical values are the latest revised vintage.",
+  "observations": 159,
+  "latest_period": "2026Q2"
+}

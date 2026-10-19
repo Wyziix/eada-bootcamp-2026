@@ -1,0 +1,6 @@
+-r requirements-eda.txt
+scikit-learn==1.8.0
+xgboost==2.1.0
+scipy==1.13.1
+joblib==1.4.2
+threadpoolctl>=3.1,<4

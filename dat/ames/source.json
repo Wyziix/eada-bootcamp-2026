@@ -1,0 +1,47 @@
+{
+  "title": "Ames Housing — original full release",
+  "author": "Dean De Cock",
+  "downloaded_on": "2026-10-19",
+  "source_data_url": "https://jse.amstat.org/v19n3/decock/AmesHousing.txt",
+  "source_dictionary_url": "https://jse.amstat.org/v19n3/decock/DataDocumentation.txt",
+  "source_paper_url": "https://jse.amstat.org/v19n3/decock.pdf",
+  "source_sha256": "6cfe6cb525ba437de428653a1040e2aed7d696640bf75203786a6d7a0e67cfcc",
+  "observations": 2930,
+  "columns": 82,
+  "sale_years": [
+    2006,
+    2007,
+    2008,
+    2009,
+    2010
+  ],
+  "target": {
+    "column": "SalePrice",
+    "unit": "USD",
+    "description": "Recorded property sale price"
+  },
+  "files": {
+    "AmesHousing.txt": "Original tab-separated source, preserved byte for byte",
+    "ames_housing.csv": "Comma-separated copy with original headers and field values",
+    "ames_starter.csv": "Five input columns and the target, all 2,930 observations retained",
+    "data_description.txt": "Original column guide decoded from Windows-1252 to UTF-8"
+  },
+  "starter_column_mapping": {
+    "living_area_sqft": "Gr Liv Area",
+    "full_bathrooms_above_ground": "Full Bath",
+    "year_built": "Year Built",
+    "neighborhood": "Neighborhood",
+    "garage_capacity_cars": "Garage Cars",
+    "sale_price_usd": "SalePrice"
+  },
+  "starter_missing_counts": {
+    "living_area_sqft": 0,
+    "full_bathrooms_above_ground": 0,
+    "year_built": 0,
+    "neighborhood": 0,
+    "garage_capacity_cars": 1,
+    "sale_price_usd": 0
+  },
+  "preparation": "Format conversion and starter column selection only. No imputation, row filtering, training, or evaluation split.",
+  "version_note": "Original full release. This is not the separately split Kaggle train.csv/test.csv package."
+}

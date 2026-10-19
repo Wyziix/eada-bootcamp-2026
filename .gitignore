@@ -1,0 +1,34 @@
+# Local runtime, credentials, and editor state
+.DS_Store
+__pycache__/
+*.py[cod]
+node_modules/
+.venv/
+venv/
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+.data/
+*.sqlite
+*.sqlite-shm
+*.sqlite-wal
+*.db
+*.db-shm
+*.db-wal
+.wrangler/
+.sites-runtime/
+.agents/
+.codex/
+
+# Generated builds, browser sessions, and packaging artifacts
+output/
+outputs/
+.playwright-cli/
+dist/
+.next/
+.vinext/
+coverage/
+*.tgz
+*.tar.gz

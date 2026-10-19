@@ -1,0 +1,309 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Exploratory analysis of the Ames Housing dataset for a property-price prediction learning project.">
+  <title>Ames Housing · Exploratory data analysis</title>
+  <style>
+    :root { --ink:#182c44; --muted:#52657b; --line:#dce4ed; --blue:#2257a5; --teal:#15786d; --paper:#f3f6fa; }
+    * { box-sizing:border-box; }
+    body { margin:0; background:var(--paper); color:var(--ink); font:16px/1.65 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }
+    a { color:var(--blue); text-underline-offset:3px; }
+    header { background:#142b47; color:white; padding:52px 28px 42px; }
+    .wrap { max-width:1180px; margin:auto; }
+    .eyebrow { margin:0 0 12px; color:#b9d2ef; font-size:13px; letter-spacing:.12em; text-transform:uppercase; font-weight:650; }
+    h1 { font-size:clamp(30px,4vw,46px); line-height:1.18; letter-spacing:-.035em; margin:0 0 16px; }
+    header p { max-width:780px; color:#d6e2f1; margin:0; }
+    .header-note { font-size:13px; margin-top:18px; }
+    nav { background:white; border-bottom:1px solid var(--line); }
+    nav .wrap { display:flex; gap:22px; flex-wrap:wrap; padding:14px 24px; }
+    nav a { font-size:14px; text-decoration:none; font-weight:600; }
+    main { padding:28px 24px 60px; }
+    section { margin:0 0 28px; scroll-margin-top:20px; }
+    .panel { border:1px solid var(--line); border-radius:12px; padding:28px; background:white; }
+    h2 { font-size:25px; line-height:1.3; letter-spacing:-.025em; margin:0 0 12px; }
+    h3 { font-size:18px; line-height:1.4; margin:24px 0 8px; }
+    p { margin:0 0 14px; }
+    .intro { color:var(--muted); max-width:920px; }
+    .metrics { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:14px; margin-bottom:24px; }
+    .metric { background:white; border:1px solid var(--line); border-radius:10px; padding:20px; }
+    .metric strong { display:block; font-size:30px; letter-spacing:-.035em; line-height:1.25; }
+    .metric span { font-size:13px; color:var(--muted); }
+    .findings { display:grid; grid-template-columns:1fr 1fr; gap:22px; }
+    .finding { border-top:3px solid var(--blue); padding-top:14px; }
+    .finding h3 { margin:0 0 8px; }
+    .finding p { margin:0; font-size:15px; color:var(--muted); }
+    .note { padding:15px 18px; background:#eef4fc; border-left:3px solid var(--blue); margin:18px 0; font-size:14px; }
+    .review { background:#fff7e8; border-color:#c67613; }
+    .chart { width:100%; min-width:0; margin:14px 0; overflow-x:auto; }
+    .chart .plotly-graph-div { width:100% !important; min-width:740px; }
+    .caption { color:var(--muted); font-size:14px; margin:10px 0 18px; }
+    .table-scroll { overflow-x:auto; margin:16px 0; border:1px solid var(--line); border-radius:7px; }
+    table { border-collapse:collapse; width:100%; font-size:14px; }
+    th { background:#edf2f8; text-align:left; color:#243c59; font-weight:650; }
+    th,td { padding:11px 13px; border-bottom:1px solid #e7edf4; vertical-align:top; }
+    tbody tr:last-child td { border-bottom:0; }
+    tbody tr:nth-child(even) { background:#fafbfd; }
+    .numeric { text-align:right; font-variant-numeric:tabular-nums; white-space:nowrap; }
+    .flagged { font-weight:650; color:#9b451c; }
+    .subtle { color:var(--muted); font-size:13px; }
+    code { font:13px/1.55 ui-monospace,SFMono-Regular,Consolas,monospace; background:#edf2f7; padding:2px 5px; border-radius:4px; overflow-wrap:anywhere; }
+    pre { padding:17px; overflow:auto; background:#142b47; color:#e2ecf7; border-radius:7px; font-size:14px; }
+    pre code { background:transparent; color:inherit; padding:0; white-space:pre; }
+    details { margin:18px 0; }
+    summary { cursor:pointer; color:var(--blue); font-weight:650; }
+    .filters { display:flex; align-items:end; flex-wrap:wrap; gap:14px; margin:18px 0; }
+    .filters label { display:flex; flex-direction:column; gap:5px; font-size:13px; font-weight:600; }
+    .filters label:first-child { flex:1; min-width:220px; }
+    input,select { border:1px solid #b9c8da; border-radius:6px; padding:10px 12px; background:white; color:var(--ink); font:inherit; }
+    input:focus,select:focus { outline:3px solid #c2d9f6; outline-offset:1px; }
+    .column-guide { max-height:650px; overflow:auto; }
+    .column-guide thead th { position:sticky; top:0; z-index:1; }
+    .column-guide td:nth-child(1) { min-width:140px; }
+    .column-guide td:nth-child(3) { min-width:270px; }
+    .column-guide td:last-child { min-width:175px; }
+    .steps { padding-left:24px; }
+    .steps li { margin:0 0 13px; padding-left:5px; }
+    .facts { display:grid; grid-template-columns:1fr 1fr; gap:24px; }
+    .source-line { word-break:break-word; }
+    footer { color:var(--muted); font-size:13px; padding:8px 0; }
+    [hidden] { display:none !important; }
+    @media (max-width:760px) {
+      header { padding:34px 20px; }
+      main { padding:20px 12px; }
+      .panel { padding:20px 14px; }
+      .metrics { grid-template-columns:1fr 1fr; }
+      .findings,.facts { grid-template-columns:1fr; }
+      nav .wrap { gap:14px; padding:12px 18px; }
+      .metric { padding:15px; }
+      .metric strong { font-size:25px; }
+    }
+    @media print {
+      body { background:white; font-size:11pt; }
+      header { background:white; color:var(--ink); padding:10px 0; }
+      header p,.eyebrow { color:var(--muted); }
+      nav,.filters,.modebar { display:none !important; }
+      main { padding:12px 0; }
+      .panel { border:0; padding:12px 0; }
+      .column-guide { max-height:none; overflow:visible; }
+      .chart { break-inside:avoid; }
+    }
+  </style>
+  <script>{{ plotly_js | safe }}</script>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <p class="eyebrow">Property-price prediction · Learning project</p>
+    <h1>Understanding Ames Housing</h1>
+    <p>An exploratory data analysis of {{ stats.rows | integer }} individual home sales. Learn what the columns describe, how prices vary, and what needs attention before training a model.</p>
+    <p class="header-note">Ames, Iowa · Sales recorded {{ stats.year_min }}–{{ stats.year_max }} · Prices in historical USD</p>
+  </div>
+</header>
+<nav aria-label="Report sections"><div class="wrap">
+  <a href="#overview">Overview</a><a href="#data">Read the data</a><a href="#prices">Prices</a>
+  <a href="#quality">Data quality</a><a href="#relationships">Relationships</a>
+  <a href="#review">Records to review</a><a href="#columns">Column guide</a><a href="#next">Next steps</a>
+</div></nav>
+<main class="wrap">
+  <section id="overview" aria-label="Dataset overview">
+    <div class="metrics">
+      <div class="metric"><strong>{{ stats.rows | integer }}</strong><span>Recorded home sales</span></div>
+      <div class="metric"><strong>{{ stats.input_columns }}</strong><span>Potential input columns</span></div>
+      <div class="metric"><strong>{{ stats.price_median | money }}</strong><span>Median recorded sale price</span></div>
+      <div class="metric"><strong>{{ stats.neighborhoods }}</strong><span>Neighborhoods represented</span></div>
+    </div>
+    <div class="panel">
+      <h2>What this exploration tells us</h2>
+      <p class="intro">This report describes the complete dataset. It identifies useful questions for modeling; it does not train a model or measure prediction accuracy.</p>
+      <div class="findings">{% for finding in findings %}<article class="finding"><h3>{{ finding.title }}</h3><p>{{ finding.text }}</p></article>{% endfor %}</div>
+      <p class="caption" style="margin-top:22px">Charts are interactive. Hover for values, drag within a chart to zoom, and double-click to reset. On narrow screens, scroll charts horizontally to see the whole plot. All charts and the chart library are included in this file for offline use.</p>
+    </div>
+  </section>
+
+  <section class="panel" id="data">
+    <h2>1. Read one row as one home sale</h2>
+    <p>The full file has {{ stats.columns }} columns: {{ stats.input_columns }} potential inputs, {{ stats.identifiers }} identifiers, and one target, <code>SalePrice</code>. The target is the known sale price that a future model will learn to estimate.</p>
+    <div class="table-scroll"><table>
+      <thead><tr><th>Original column</th><th>Meaning</th><th>How to use it</th></tr></thead>
+      <tbody>
+        <tr><td><code>Gr Liv Area</code></td><td>Above-ground living area, in square feet</td><td>Numeric input. Multiply sq ft by 0.09290304 for m².</td></tr>
+        <tr><td><code>Full Bath</code></td><td>Full bathrooms above ground</td><td>Count input. Basement bathrooms and half bathrooms have separate columns.</td></tr>
+        <tr><td><code>Year Built</code></td><td>Original construction year</td><td>Numeric input. Age at sale can be calculated with the sale year.</td></tr>
+        <tr><td><code>Neighborhood</code></td><td>Area within Ames, identified by a code</td><td>Categorical input. Codes are labels, without a numeric ordering.</td></tr>
+        <tr><td><code>Garage Cars</code></td><td>Garage capacity in cars</td><td>Numeric input. Zero capacity differs from an unknown value.</td></tr>
+        <tr><td><code>SalePrice</code></td><td>Recorded property sale price, in dollars</td><td>Target. Exclude this column from model inputs.</td></tr>
+        <tr><td><code>Order</code> / <code>PID</code></td><td>Record and parcel identifiers</td><td>Keep for traceability and duplicate checks. Exclude from the first model.</td></tr>
+      </tbody>
+    </table></div>
+    <h3>The first six examples</h3>
+    <div class="table-scroll"><table><thead><tr>{% for column in sample_headers %}<th>{{ column }}</th>{% endfor %}</tr></thead>
+      <tbody>{% for row in sample %}<tr>{% for column in sample_headers %}<td>{{ row[column] }}</td>{% endfor %}</tr>{% endfor %}</tbody>
+    </table></div>
+    <p class="caption">The starter CSV uses clearer names for these five inputs and the target. This report uses original column names so you can match the full CSV and source dictionary.</p>
+    <div class="note"><strong>Four kinds of information:</strong> nominal variables are categories, ordinal variables are ordered ratings, discrete variables are counts or recorded years, and continuous variables are measurements. Among potential inputs, the dictionary classifies {{ stats.input_types.Nominal }} as nominal, {{ stats.input_types.Ordinal }} as ordinal, {{ stats.input_types.Discrete }} as discrete, and {{ stats.input_types.Continuous }} as continuous. <code>MS SubClass</code> is a category even though its codes look numeric.</div>
+  </section>
+
+  <section class="panel" id="prices">
+    <h2>2. What do the sale prices look like?</h2>
+    <p class="intro">Prices range from {{ stats.price_min | money }} to {{ stats.price_max | money }}. The middle half of sales falls between {{ stats.price_q1 | money }} and {{ stats.price_q3 | money }}. The mean is {{ stats.price_mean | money }}, compared with a median of {{ stats.price_median | money }}.</p>
+    <div class="chart">{{ charts.price_distribution | safe }}</div>
+    <p class="caption">The right-hand chart shows the same observations after taking log₁₀ of price: 5 means $100,000, and 6 means $1,000,000. This compresses the expensive tail and suggests a transformation to compare during model validation. It is not a prediction.</p>
+    <div class="note"><strong>A useful benchmark:</strong> a baseline model can always predict the median price of its training data. A more complex model should beat that baseline on unseen homes. The median shown here summarizes all rows and is not a held-out evaluation result.</div>
+  </section>
+
+  <section class="panel" id="quality">
+    <h2>3. Data quality: blanks, absence, and consistency</h2>
+    <p>There are <strong>{{ stats.blank_cells | integer }} blank cells</strong> across {{ stats.columns_with_blanks }} columns and {{ stats.rows_with_blanks | integer }} rows. Separately, there are <strong>{{ stats.documented_absence_cells | integer }} literal <code>NA</code> entries</strong> in columns where the dictionary defines that code as an absent feature.</p>
+    <div class="chart">{{ charts.completeness | safe }}</div>
+    <div class="note review"><strong>Do not replace every <code>NA</code> with a missing value.</strong> For example, <code>Pool QC = NA</code> means no pool, and <code>Bsmt Qual = NA</code> means no basement. Blank counts describe how values are stored. Some blanks, such as garage year for a home without a garage, may also represent a feature that does not apply. Cross-check related columns before choosing a replacement.</div>
+    <h3>Checks on the recorded values</h3>
+    <div class="table-scroll"><table><thead><tr><th>Check</th><th class="numeric">Rows</th><th>Interpretation</th></tr></thead>
+      <tbody>{% for check in checks %}<tr><td>{{ check.check }}</td><td class="numeric {% if check.count %}flagged{% endif %}">{{ check.count | integer }}</td><td>{{ check.meaning }}</td></tr>{% endfor %}</tbody>
+    </table></div>
+    <details><summary>See every column containing blank cells</summary>
+      <div class="table-scroll"><table><thead><tr><th>Column</th><th class="numeric">Blanks</th><th class="numeric">% of homes</th><th>Definition</th></tr></thead>
+        <tbody>{% for row in missing_columns %}<tr><td>{{ row.name }}</td><td class="numeric">{{ row.missing | integer }}</td><td class="numeric">{{ '%.2f' | format(row.missing_pct) }}%</td><td>{{ row.description }}</td></tr>{% endfor %}</tbody>
+      </table></div>
+    </details>
+    <p class="caption">All rows are retained. Missing-value counts are calculated after trimming category padding in memory. Source files are not modified.</p>
+  </section>
+
+  <section class="panel" id="relationships">
+    <h2>4. Which property details are associated with price?</h2>
+    <p class="intro">Explore these relationships to understand the data and choose modeling experiments. Single-variable associations do not capture all interactions between size, location, condition, and price.</p>
+    <h3>The strongest numeric associations</h3>
+    <div class="chart">{{ charts.price_correlations | safe }}</div>
+    <p class="caption">The 12 numeric features with the largest absolute Pearson correlations are shown. A correlation near +1 means a strong positive linear association; near 0 means little linear association. Identifiers and nominal category codes are excluded. Each correlation uses rows where both values are present. Quality ratings are treated numerically here as an exploratory approximation.</p>
+
+    <h3>Living area and sale price</h3>
+    <div class="chart">{{ charts.living_area | safe }}</div>
+    <p class="caption">Each point is one sale. Larger homes generally sell for more, but the spread shows why area alone cannot determine a price. Hover over the red points to inspect the unusually large homes and their sale conditions.</p>
+
+    <h3>Overall quality rating and price</h3>
+    <div class="chart">{{ charts.quality | safe }}</div>
+    <p class="caption">A box spans the middle half of prices in a rating group; its line marks the median. Whiskers extend to observations within 1.5 interquartile ranges of the box, with more distant observations shown as points. The labels include each group's sample size. A quality rating is partly subjective and needs a clear definition if exposed in an application.</p>
+
+    <h3>Neighborhoods differ in their recorded sale prices</h3>
+    <div class="chart">{{ charts.neighborhoods | safe }}</div>
+    <p class="caption">Hover to see the number of homes behind each median. These are unadjusted comparisons: neighborhoods may differ in house size, quality, and year of construction. Small groups provide less stable estimates. Codes are decoded in the column guide.</p>
+
+    <h3>Some inputs describe overlapping information</h3>
+    <div class="chart">{{ charts.feature_overlap | safe }}</div>
+    <p class="caption">This matrix covers the target and the nine numeric features most strongly associated with it. Strong correlations between inputs, such as garage size measured in cars and square feet, indicate overlapping information. That can make individual linear-model coefficients harder to interpret.</p>
+
+    <h3>Sales across years</h3>
+    <div class="chart">{{ charts.sale_year | safe }}</div>
+    <p class="caption">The yearly median reflects both market conditions and the mix of properties sold. It is not a house-price index or an inflation adjustment. The source does not establish that every year has equal observation coverage.</p>
+
+    <h3>Sale conditions provide context</h3>
+    <div class="chart">{{ charts.sale_conditions | safe }}</div>
+    <p class="caption">The source distinguishes normal sales, abnormal sales, family sales, adjoining land purchases, allocations, and partial sales. Define which kinds of transactions the application should predict before deciding whether to restrict the training population.</p>
+  </section>
+
+  <section class="panel" id="review">
+    <h2>5. Records to review before modeling</h2>
+    <p>The source dictionary calls attention to homes larger than 4,000 sq ft. They remain included in all charts and summaries. A large or expensive home can be valid; investigate context before removing an observation.</p>
+    <div class="table-scroll"><table><thead><tr><th>Record (Order)</th><th>Living area (sq ft)</th><th>Sale price (USD)</th><th>Sale condition</th></tr></thead>
+      <tbody>{% for row in area_rows %}<tr><td>{{ row['Order'] }}</td><td>{{ row['Gr Liv Area'] }}</td><td>{{ row.SalePrice }}</td><td>{{ row['Sale Condition'] }}</td></tr>{% else %}<tr><td colspan="4">No homes exceed this threshold.</td></tr>{% endfor %}</tbody>
+    </table></div>
+    <h3>Garage construction dates after the sale year</h3>
+    <div class="table-scroll"><table><thead><tr><th>Record (Order)</th><th>Garage year</th><th>Sale year</th><th>Sale price (USD)</th></tr></thead>
+      <tbody>{% for row in garage_rows %}<tr><td>{{ row['Order'] }}</td><td>{{ row['Garage Yr Blt'] }}</td><td>{{ row['Yr Sold'] }}</td><td>{{ row.SalePrice }}</td></tr>{% else %}<tr><td colspan="4">No such date inconsistencies found.</td></tr>{% endfor %}</tbody>
+    </table></div>
+    <p class="caption">Inspect the recorded dates against the source. This report does not assume what a corrected date should be.</p>
+    <div class="note"><strong>A statistical flag is a review prompt:</strong> the usual 1.5 × IQR price rule flags {{ stats.price_iqr_flagged }} sales outside {{ stats.price_iqr_low | money }} to {{ stats.price_iqr_high | money }}. This describes unusual prices relative to the distribution, not confirmed data errors.</div>
+  </section>
+
+  <section class="panel" id="columns">
+    <h2>6. Searchable guide to all {{ stats.columns }} columns</h2>
+    <p class="intro">Definitions and category labels come from the accompanying source dictionary. Blank counts and distinct values come from this CSV. Numeric ranges and medians summarize available values; the median is not defined for nominal categories.</p>
+    <div class="filters">
+      <label>Find a column<input id="column-search" type="search" placeholder="Try basement, garage, quality, or SalePrice" autocomplete="off"></label>
+      <label>Role<select id="role-filter"><option value="">All roles</option><option>Input</option><option>Identifier</option><option>Target</option></select></label>
+      <label>Data type<select id="kind-filter"><option value="">All types</option><option>Nominal</option><option>Ordinal</option><option>Discrete</option><option>Continuous</option></select></label>
+    </div>
+    <p class="subtle" id="column-count" aria-live="polite">Showing {{ stats.columns }} columns</p>
+    <div class="table-scroll column-guide"><table id="column-table">
+      <thead><tr><th>Column / role</th><th>Type</th><th>Meaning and codes</th><th class="numeric">Blanks</th><th class="numeric">Absent NA</th><th class="numeric">Distinct</th><th>Examples / numeric summary</th></tr></thead>
+      <tbody>{% for row in profile %}<tr data-role="{{ row.role }}" data-kind="{{ row.kind }}">
+        <td><strong>{{ row.name }}</strong><br><span class="subtle">{{ row.role }}</span></td>
+        <td>{{ row.kind }}</td>
+        <td>{{ row.description }}{% if row.absence %}<br><span class="subtle">NA = {{ row.absence_label }}</span>{% endif %}
+          {% if row.levels %}<details><summary>Category codes</summary><dl class="subtle">{% for code, label in row.levels.items() %}<dt><strong>{{ code }}</strong></dt><dd>{{ label }}</dd>{% endfor %}</dl></details>{% endif %}
+        </td>
+        <td class="numeric">{{ row.missing | integer }}<br><span class="subtle">{{ '%.2f' | format(row.missing_pct) }}%</span></td>
+        <td class="numeric">{{ row.absence | integer }}</td><td class="numeric">{{ row.unique | integer }}</td>
+        <td>{{ row.examples }}{% if row.range != '—' %}<br><span class="subtle">Range: {{ row.range }}<br>Median: {{ row.median }}</span>{% endif %}</td>
+      </tr>{% endfor %}</tbody>
+    </table></div>
+    <details><summary>Complete numeric descriptive statistics</summary>
+      <div class="table-scroll"><table><thead><tr><th>Column</th><th>Count</th><th>Mean</th><th>Std dev</th><th>Min</th><th>25%</th><th>Median</th><th>75%</th><th>Max</th></tr></thead>
+        <tbody>{% for row in numeric_summary %}<tr>{% for name in ['Column','count','mean','std','min','25%','50%','75%','max'] %}<td {% if name != 'Column' %}class="numeric"{% endif %}>{{ row[name] }}</td>{% endfor %}</tr>{% endfor %}</tbody>
+      </table></div>
+      <p class="caption">Standard deviation measures spread around the mean. Percentiles locate values within the distribution. Available-value counts can differ between columns.</p>
+    </details>
+  </section>
+
+  <section class="panel" id="next">
+    <h2>7. Turn the exploration into a learning experiment</h2>
+    <ol class="steps">
+      <li><strong>Define the prediction.</strong> Estimate a property's recorded sale price within this historical Ames dataset. Choose inputs a user could provide when requesting an estimate.</li>
+      <li><strong>Reserve an evaluation set.</strong> An illustrative 80/20 split would use {{ stats.illustrative_train_rows | integer }} homes for training and {{ stats.illustrative_test_rows | integer }} for evaluation. Later, compare this with holding out the latest sale year to explore predicting future transactions.</li>
+      <li><strong>Begin with the five starter inputs.</strong> Living area, full bathrooms above ground, construction year, neighborhood, and garage capacity are easy to explain. These inputs contain {{ stats.starter_blank_cells }} blank value(s). Compare adding quality and other variables using training-set validation.</li>
+      <li><strong>Prepare inputs inside a fitted pipeline.</strong> Learn numeric replacements and neighborhood encoding from training data only. Handle absent features explicitly and make sure unknown neighborhoods can be processed at prediction time.</li>
+      <li><strong>Compare a baseline and simple models.</strong> Start with the training-set median, then linear regression and a random forest. If experimenting with log-price, transform predictions back to dollars before reporting dollar errors.</li>
+      <li><strong>Measure error on unseen homes.</strong> Mean absolute error (MAE) is the average absolute difference between estimated and actual prices. Also inspect errors by price range and neighborhood; an average error is not a prediction interval.</li>
+      <li><strong>Build the form around the saved pipeline.</strong> Use consistent units, feature definitions, and category handling. Display the model's measured error and the historical period represented by the training data.</li>
+    </ol>
+    <div class="note review"><strong>Keep the final evaluation independent.</strong> This EDA explores all available rows. Before selecting features or tuning models for a final score, define an untouched holdout and repeat those decisions on training data only. No split, imputation, correction, deletion, or model training has been performed by this script.</div>
+    <h3>Regenerate this report</h3>
+    <pre><code>source ~/myenv/bin/activate
+python scripts/eda.py</code></pre>
+  </section>
+
+  <section class="panel" id="method">
+    <h2>Sources and method</h2>
+    <div class="facts">
+      <div><h3>Dataset</h3>
+        <p>Dean De Cock's original full Ames Housing release, based on residential sales recorded by the Ames Assessor's Office. This is the complete release, rather than Kaggle's separate competition train/test files.</p>
+        <p>{% if metadata.source_data_url %}<a href="{{ metadata.source_data_url }}">Original data</a>{% endif %}{% if metadata.source_dictionary_url %} · <a href="{{ metadata.source_dictionary_url }}">Variable definitions</a>{% endif %}{% if metadata.source_paper_url %} · <a href="{{ metadata.source_paper_url }}">Original paper</a>{% endif %}</p>
+      </div>
+      <div><h3>Reproducibility</h3>
+        <p>Input: <code>{{ input_name }}</code><br>Generated: {{ generated }} (Europe/Madrid)</p>
+        <p class="source-line subtle">Input SHA-256: {{ input_sha256 }}</p>
+        <p class="subtle">{% for name, version in versions.items() %}{{ name }} {{ version }}{% if not loop.last %} · {% endif %}{% endfor %}</p>
+      </div>
+    </div>
+    <p class="caption">Empty CSV cells are loaded as missing values. Literal NA category labels are retained, identifiers keep their leading zeros, and category padding is trimmed only in memory. Semantic column types come from the dictionary; numeric-looking nominal codes remain text. Identifiers are excluded from correlations. Statistics and charts retain unusual observations. Report content is generated from the input file, with source definitions supplying interpretation.</p>
+  </section>
+  <footer>Exploratory data analysis · Ames Housing learning project · Generated locally as one standalone HTML file.</footer>
+</main>
+<script id="eda-summary" type="application/json">{{ summary_json | safe }}</script>
+<script>
+  (() => {
+    const search = document.getElementById('column-search');
+    const role = document.getElementById('role-filter');
+    const kind = document.getElementById('kind-filter');
+    const rows = Array.from(document.querySelectorAll('#column-table tbody tr'));
+    const count = document.getElementById('column-count');
+    function filter() {
+      const term = search.value.trim().toLowerCase();
+      let visible = 0;
+      for (const row of rows) {
+        const match = (!term || row.textContent.toLowerCase().includes(term)) &&
+          (!role.value || row.dataset.role === role.value) && (!kind.value || row.dataset.kind === kind.value);
+        row.hidden = !match;
+        if (match) visible++;
+      }
+      count.textContent = `Showing ${visible} of ${rows.length} columns`;
+    }
+    search.addEventListener('input', filter);
+    role.addEventListener('change', filter);
+    kind.addEventListener('change', filter);
+    filter();
+  })();
+</script>
+</body>
+</html>
