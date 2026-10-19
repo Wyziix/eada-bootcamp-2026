@@ -1,6 +1,6 @@
 # Ownly
 
-Ownly is a private property portal with email/password accounts, owner listings, cover photos, buyer–seller conversations, and the existing Ames home valuation tool. One account can buy and sell. Registration checks the email's format but sends no verification email. Messages stay in the Ownly inbox; no outgoing email service is configured.
+Ownly is a property portal with email/password accounts, owner listings, cover photos, buyer–seller conversations, and the existing Ames home valuation tool. One account can buy and sell. Registration checks the email's format but sends no verification email. Messages stay in the Ownly inbox; no outgoing email service is configured.
 
 ## Run locally
 
@@ -22,6 +22,10 @@ Open http://127.0.0.1:8850. The local server automatically applies the schema mi
 - Upload one JPEG, PNG, or WebP cover photo up to 10 MB. The browser resizes it to at most 1,600 pixels on the longest side and 768 KiB. The image bytes live in SQLite, alongside the records.
 
 The hosted Site retains its existing owner-private Sites access boundary. Ownly accounts work inside that boundary; registering an Ownly account does not grant access through the outer Sites access policy. Keep it private during testing, as requested.
+
+## DigitalOcean hosting
+
+The Node server also runs directly on a Linux server behind Apache, using SQLite. See [the DigitalOcean deployment guide](../deploy/digitalocean/README.md) for the systemd service, persistent database location, HTTPS setup, and update procedure. `npm run start:node` starts the Node server. Set `OWNLY_PUBLIC_ORIGIN` to the HTTPS origin and explicitly trust only the configured loopback reverse proxy. This deployment is separate from the original private Sites installation.
 
 ## Storage and hosting
 

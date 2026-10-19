@@ -1,0 +1,29 @@
+[Unit]
+Description=Ownly property portal
+After=network.target
+
+[Service]
+Type=simple
+DynamicUser=yes
+WorkingDirectory=/opt/ownly/current/portal
+ExecStart=/opt/ownly/node/bin/node serve.mjs
+Environment=NODE_ENV=production
+Environment=OWNLY_PORT=8850
+Environment=OWNLY_DB_PATH=/var/lib/ownly/ownly.sqlite
+Environment=OWNLY_PUBLIC_ORIGIN=https://ownly.torras.ai
+Environment=OWNLY_TRUST_PROXY=1
+StateDirectory=ownly
+StateDirectoryMode=0700
+UMask=0077
+Restart=on-failure
+RestartSec=3
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=strict
+ProtectHome=yes
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+MemoryMax=256M
+TasksMax=64
+
+[Install]
+WantedBy=multi-user.target
