@@ -1,0 +1,260 @@
+<title>California Price Estimator</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: map-first tool. Clickable California map on the left, inputs + live estimate on the right; stacks on phones. */
+:root {
+  --bg: #f3f5f6;
+  --panel: #ffffff;
+  --ink: #15232e;
+  --muted: #5a6872;
+  --line: #d9e0e4;
+  --accent: #1d5f8a;
+  --poppy: #d9822b;
+  --display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --body: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0f171d; --panel: #17222a; --ink: #e6edf1; --muted: #93a3ad; --line: #2a3843;
+    --accent: #6fb3dd; --poppy: #f0a14d; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0f171d; --panel: #17222a; --ink: #e6edf1; --muted: #93a3ad; --line: #2a3843;
+  --accent: #6fb3dd; --poppy: #f0a14d; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--ink); font-family: var(--body); font-size: 15px; line-height: 1.5;
+  padding-block: 28px 48px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+.wrap { max-width: 1080px; margin: 0 auto; display: grid; gap: 24px; }
+header h1 { font-family: var(--display); font-weight: 800; font-size: clamp(28px, 5vw, 42px); line-height: 1.05; margin: 0; text-wrap: balance; letter-spacing: -0.01em; }
+header p { margin: 8px 0 0; color: var(--muted); max-width: 62ch; }
+.eyebrow { font-family: var(--mono); font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--poppy); margin-bottom: 6px; }
+.grid { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); gap: 24px; align-items: start; }
+@media (max-width: 820px) { .grid { grid-template-columns: minmax(0, 1fr); } }
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 18px; min-width: 0; }
+h2 { font-family: var(--display); font-weight: 600; font-size: 19px; margin: 0 0 4px; }
+.hint { color: var(--muted); font-size: 13px; margin: 0 0 12px; }
+canvas { display: block; width: 100%; max-width: 100%; aspect-ratio: 0.92; border-radius: 6px; cursor: crosshair; background: var(--bg); }
+.legend { display: flex; align-items: center; gap: 8px; font-family: var(--mono); font-size: 12px; color: var(--muted); margin-top: 10px; }
+.legend .ramp { flex: 1; height: 8px; border-radius: 4px; background: linear-gradient(90deg, #2b4c7e, #3f7fa6, #5fb3b3, #c9c95b, #f2b134); }
+.presets { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
+button.chip { font: 500 13px var(--body); color: var(--ink); background: transparent; border: 1px solid var(--line); border-radius: 999px; padding: 5px 12px; cursor: pointer; }
+button.chip:hover { border-color: var(--accent); color: var(--accent); }
+button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.result { display: grid; gap: 4px; padding-bottom: 16px; border-bottom: 1px solid var(--line); margin-bottom: 16px; }
+.price { font-family: var(--display); font-weight: 800; font-size: clamp(36px, 7vw, 54px); line-height: 1; font-variant-numeric: tabular-nums; color: var(--accent); }
+.range { font-family: var(--mono); font-size: 13px; color: var(--muted); }
+.pct { margin-top: 10px; }
+.pct .bar { position: relative; height: 10px; border-radius: 5px; background: linear-gradient(90deg, #2b4c7e, #3f7fa6, #5fb3b3, #c9c95b, #f2b134); }
+.pct .mark { position: absolute; top: -4px; width: 3px; height: 18px; background: var(--ink); border-radius: 2px; transform: translateX(-1px); transition: left .25s; }
+.pct .lbl { display: flex; justify-content: space-between; font-family: var(--mono); font-size: 11px; color: var(--muted); margin-top: 4px; }
+.pct p { margin: 8px 0 0; font-size: 13px; }
+
+.fields { display: grid; gap: 14px; }
+.field { display: grid; gap: 4px; }
+.field .top { display: flex; justify-content: space-between; gap: 8px; font-size: 14px; }
+.field .top output { font-family: var(--mono); font-variant-numeric: tabular-nums; color: var(--ink); font-weight: 500; }
+.field small { color: var(--muted); font-size: 12px; }
+input[type=range] { width: 100%; accent-color: var(--accent); }
+select { font: 15px var(--body); padding: 6px 8px; border: 1px solid var(--line); border-radius: 6px; background: var(--panel); color: var(--ink); }
+.coords { font-family: var(--mono); font-size: 13px; color: var(--muted); }
+
+.drivers { display: grid; gap: 8px; }
+.drv { display: grid; grid-template-columns: 170px minmax(0, 1fr) 44px; gap: 10px; align-items: center; font-size: 13px; }
+.drv .track { height: 8px; background: var(--line); border-radius: 4px; position: relative; overflow: hidden; }
+.drv .fill { position: absolute; top: 0; bottom: 0; border-radius: 4px; }
+.drv .v { font-family: var(--mono); text-align: right; font-variant-numeric: tabular-nums; }
+@media (max-width: 480px) { .drv { grid-template-columns: 120px minmax(0, 1fr) 40px; } }
+.note { font-size: 13px; color: var(--muted); max-width: 70ch; }
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">1990 census · 20,640 blocks · gradient boosting</div>
+    <h1>California Price Estimator</h1>
+    <p>Pick a spot on the map, describe the neighbourhood, and the model estimates the median home value. It runs entirely in your browser: 100 decision trees trained in Python, exported to this page.</p>
+  </header>
+
+  <div class="grid">
+    <section class="panel">
+      <h2>Where?</h2>
+      <p class="hint">Each dot is a real census block, coloured by its price. Click anywhere to move your pin.</p>
+      <canvas id="map" aria-label="Map of California house prices. Click to choose a location."></canvas>
+      <div class="legend"><span>$15k</span><div class="ramp"></div><span>$500k+</span></div>
+      <div class="presets" id="presets"></div>
+    </section>
+
+    <section class="panel">
+      <div class="result">
+        <div class="eyebrow">Estimated median home value</div>
+        <div class="price" id="price">$0</div>
+        <div class="range" id="range"></div>
+        <div class="pct">
+          <div class="bar"><div class="mark" id="mark"></div></div>
+          <div class="lbl"><span>cheapest</span><span>median $180k</span><span>priciest</span></div>
+          <p id="pctText"></p>
+        </div>
+      </div>
+      <div class="fields">
+        <div class="field">
+          <div class="top"><label for="ocean">Distance to ocean</label><span class="coords" id="coords"></span></div>
+          <select id="ocean"></select>
+          <small>Set automatically from the nearest block when you click the map.</small>
+        </div>
+        <div class="field">
+          <div class="top"><label for="income">Median household income</label><output id="incomeOut"></output></div>
+          <input type="range" id="income" min="5" max="150" step="1" value="40">
+        </div>
+        <div class="field">
+          <div class="top"><label for="age">Median age of houses</label><output id="ageOut"></output></div>
+          <input type="range" id="age" min="1" max="52" step="1" value="25">
+        </div>
+        <div class="field">
+          <div class="top"><label for="rooms">Rooms per household</label><output id="roomsOut"></output></div>
+          <input type="range" id="rooms" min="2" max="10" step="0.1" value="5">
+        </div>
+        <div class="field">
+          <div class="top"><label for="beds">Bedrooms per household</label><output id="bedsOut"></output></div>
+          <input type="range" id="beds" min="0.5" max="4" step="0.1" value="1">
+        </div>
+        <div class="field">
+          <div class="top"><label for="people">People per household</label><output id="peopleOut"></output></div>
+          <input type="range" id="people" min="1" max="6" step="0.1" value="3">
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <section class="panel">
+    <h2>What drives price</h2>
+    <p class="hint">Correlation with price from the EDA (eda.py). +1 means they rise together, −1 means one falls as the other rises.</p>
+    <div class="drivers" id="drivers"></div>
+    <p class="note">Income dominates. Location matters too but shows up weakly here because it isn't a straight line: both the far north and the far south are cheaper than the coast around LA and San Francisco. Trees catch that pattern, which is why gradient boosting beats linear regression in train.py.</p>
+  </section>
+</div>
+
+<script>
+const MODEL = /*MODEL*/null;
+const POINTS = /*POINTS*/null;
+const LABELS = { "<1H OCEAN": "Under 1 hour from the ocean", "INLAND": "Inland", "ISLAND": "Island", "NEAR BAY": "Near a bay", "NEAR OCEAN": "Near the ocean" };
+const RAMP = ["#2b4c7e", "#3f7fa6", "#5fb3b3", "#c9c95b", "#f2b134"];
+// Price percentiles of all 20,640 blocks ($k), from the full CSV
+const PCTS = [15,59,70,80,89,96,103,112,120,129,137,144,152,158,164,171,180,188,195,207,218,227,238,250,265,279,299,327,350,387,450,500,500];
+const PRESETS = [
+  ["San Francisco", 37.77, -122.42], ["Los Angeles", 34.05, -118.25], ["San Diego", 32.72, -117.16],
+  ["Sacramento", 38.58, -121.49], ["Fresno", 36.74, -119.79], ["Bakersfield", 35.37, -119.02]
+];
+const $ = id => document.getElementById(id);
+const state = { lat: 34.05, lon: -118.25 };
+
+// ---- the model: same steps as the Python pipeline ----
+function predict(row) {
+  const x = MODEL.numeric.map((c, i) => (row[c] - MODEL.mean[i]) / MODEL.scale[i]);
+  MODEL.categories.forEach(c => x.push(row.ocean_proximity === c ? 1 : 0));
+  let total = MODEL.baseline;
+  for (const tree of MODEL.trees) {
+    let i = 0;
+    while (tree[i][5] === null) i = x[tree[i][0]] <= tree[i][1] ? tree[i][2] : tree[i][3];
+    total += tree[i][5];
+  }
+  return Math.max(total, 15000);
+}
+
+// ---- map ----
+const LON0 = -124.6, LON1 = -113.9, LAT0 = 32.4, LAT1 = 42.1;
+const canvas = $("map"), ctx = canvas.getContext("2d");
+function toXY(lon, lat, w, h) { return [ (lon - LON0) / (LON1 - LON0) * w, (LAT1 - lat) / (LAT1 - LAT0) * h ]; }
+function colorFor(k) {
+  const t = Math.min(Math.max((k - 15) / 485, 0), 1) * (RAMP.length - 1);
+  return RAMP[Math.round(t)];
+}
+function drawMap() {
+  const dpr = window.devicePixelRatio || 1, w = canvas.clientWidth, h = canvas.clientHeight;
+  canvas.width = w * dpr; canvas.height = h * dpr; ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.clearRect(0, 0, w, h);
+  const r = Math.max(1.4, w / 380);
+  const sorted = POINTS.slice().sort((a, b) => a[2] - b[2]);
+  for (const p of sorted) {
+    const [x, y] = toXY(p[0], p[1], w, h);
+    ctx.fillStyle = colorFor(p[2]); ctx.globalAlpha = 0.75;
+    ctx.beginPath(); ctx.arc(x, y, r, 0, 7); ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+  const [px, py] = toXY(state.lon, state.lat, w, h);
+  const ink = getComputedStyle(document.documentElement).getPropertyValue("--ink").trim();
+  ctx.strokeStyle = ink; ctx.lineWidth = 2.5;
+  ctx.beginPath(); ctx.arc(px, py, 9, 0, 7); ctx.stroke();
+  ctx.fillStyle = ink; ctx.beginPath(); ctx.arc(px, py, 3, 0, 7); ctx.fill();
+}
+function setLocation(lat, lon) {
+  state.lat = lat; state.lon = lon;
+  let best = null, bd = Infinity;
+  for (const p of POINTS) { const d = (p[0] - lon) ** 2 + (p[1] - lat) ** 2; if (d < bd) { bd = d; best = p; } }
+  if (best) $("ocean").value = MODEL.categories[best[3]];
+  update();
+}
+canvas.addEventListener("click", e => {
+  const b = canvas.getBoundingClientRect();
+  const lon = LON0 + (e.clientX - b.left) / b.width * (LON1 - LON0);
+  const lat = LAT1 - (e.clientY - b.top) / b.height * (LAT1 - LAT0);
+  setLocation(+lat.toFixed(2), +lon.toFixed(2));
+});
+
+// ---- inputs and output ----
+const fmt = n => "$" + Math.round(n).toLocaleString("en-US");
+function update() {
+  const income = +$("income").value, age = +$("age").value, rooms = +$("rooms").value;
+  const beds = Math.min(+$("beds").value, rooms), people = +$("people").value;
+  $("incomeOut").textContent = "$" + income + "k / yr";
+  $("ageOut").textContent = age + " yrs";
+  $("roomsOut").textContent = rooms.toFixed(1);
+  $("bedsOut").textContent = beds.toFixed(1);
+  $("peopleOut").textContent = people.toFixed(1);
+  $("coords").textContent = state.lat.toFixed(2) + "°N, " + Math.abs(state.lon).toFixed(2) + "°W";
+
+  const price = predict({
+    longitude: state.lon, latitude: state.lat, housing_median_age: age,
+    median_income: income / 10, rooms_per_household: rooms,
+    bedrooms_per_room: beds / rooms, people_per_household: people,
+    ocean_proximity: $("ocean").value
+  });
+  $("price").textContent = fmt(price);
+  $("range").textContent = "Typical error ±" + fmt(MODEL.mae) + "  →  " + fmt(Math.max(price - MODEL.mae, 15000)) + " to " + fmt(price + MODEL.mae);
+  const k = price / 1000;
+  let i = PCTS.findIndex(v => v >= k); if (i < 0) i = PCTS.length - 1;
+  const pct = Math.round(i / (PCTS.length - 1) * 100);
+  $("mark").style.left = pct + "%";
+  $("pctText").textContent = "Pricier than about " + pct + "% of California blocks in 1990.";
+  drawMap();
+}
+
+MODEL.categories.forEach(c => { const o = document.createElement("option"); o.value = c; o.textContent = LABELS[c] || c; $("ocean").append(o); });
+$("ocean").value = "<1H OCEAN";
+PRESETS.forEach(([name, lat, lon]) => {
+  const b = document.createElement("button"); b.className = "chip"; b.type = "button"; b.textContent = name;
+  b.addEventListener("click", () => setLocation(lat, lon)); $("presets").append(b);
+});
+["income", "age", "rooms", "beds", "people", "ocean"].forEach(id => $(id).addEventListener("input", update));
+
+const DRIVERS = [["Median income", 0.69], ["Bedrooms per room", -0.26], ["Rooms per household", 0.15], ["Latitude (north)", -0.14], ["Age of houses", 0.11], ["People per household", -0.02]];
+DRIVERS.forEach(([name, v]) => {
+  const row = document.createElement("div"); row.className = "drv";
+  const left = v < 0 ? 50 + v * 50 : 50, width = Math.abs(v) * 50;
+  row.innerHTML = `<span>${name}</span><div class="track"><div class="fill" style="left:${left}%;width:${width}%;background:${v < 0 ? "var(--poppy)" : "var(--accent)"}"></div></div><span class="v">${v > 0 ? "+" : ""}${v.toFixed(2)}</span>`;
+  $("drivers").append(row);
+});
+
+window.addEventListener("resize", drawMap);
+matchMedia("(prefers-color-scheme: dark)").addEventListener("change", drawMap);
+update();
+</script>

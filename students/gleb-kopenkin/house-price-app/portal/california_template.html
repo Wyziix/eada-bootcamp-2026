@@ -1,0 +1,414 @@
+<title>Golden State Home Value</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@500;700;800&family=Source+Sans+3:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: portal. Sticky top bar, hero line, then a two-column estimator: 3-step form with a clickable California map on the left, sticky live result on the right. Pacific blue + poppy. */
+:root {
+  --bg: #f3f5f7;
+  --panel: #ffffff;
+  --ink: #142230;
+  --muted: #5a6876;
+  --line: #d8dee5;
+  --accent: #1d5f8a;
+  --accent-ink: #ffffff;
+  --poppy: #d9822b;
+  --up: #1f7a4f;
+  --down: #b4442f;
+  --display: "Sora", "Segoe UI", system-ui, sans-serif;
+  --body: "Source Sans 3", "Segoe UI", system-ui, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e151b; --panel: #16212a; --ink: #e5ecf1; --muted: #93a2ae; --line: #283642;
+    --accent: #6fb3dd; --accent-ink: #0e151b; --poppy: #f0a14d; --up: #6cc3a0; --down: #ec8a72; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0e151b; --panel: #16212a; --ink: #e5ecf1; --muted: #93a2ae; --line: #283642;
+  --accent: #6fb3dd; --accent-ink: #0e151b; --poppy: #f0a14d; --up: #6cc3a0; --down: #ec8a72; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font-family: var(--body); font-size: 16px; line-height: 1.5; }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--panel); }
+.gutter { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.inner { max-width: 1140px; margin: 0 auto; }
+
+.bar { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--panel); border-bottom: 1px solid var(--line); }
+.bar .inner { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding-block: 12px; }
+.brand { font-family: var(--display); font-weight: 800; font-size: 18px; letter-spacing: -0.01em; display: flex; align-items: center; gap: 10px; color: var(--ink); text-decoration: none; }
+.brand svg { width: 26px; height: 26px; }
+nav { display: flex; gap: 18px; font-size: 15px; }
+nav a { color: var(--muted); text-decoration: none; }
+nav a:hover { color: var(--accent); }
+
+.hero { padding-block: 32px 4px; }
+.hero h1 { font-family: var(--display); font-weight: 800; font-size: clamp(30px, 5vw, 48px); line-height: 1.05; letter-spacing: -0.02em; margin: 0; max-width: 20ch; text-wrap: balance; }
+.hero p { color: var(--muted); margin: 12px 0 0; max-width: 62ch; font-size: 17px; }
+
+.est { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); gap: 24px; padding-block: 24px 40px; align-items: start; }
+@media (max-width: 900px) { .est { grid-template-columns: minmax(0, 1fr); } }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 22px; min-width: 0; }
+form { display: grid; gap: 26px; }
+fieldset { border: 0; margin: 0; padding: 0; display: grid; gap: 14px; min-width: 0; }
+legend { font-family: var(--display); font-weight: 700; font-size: 16px; padding: 0; margin-bottom: 10px; display: flex; gap: 10px; align-items: center; }
+legend .n { font-family: var(--mono); font-size: 12px; font-weight: 500; color: var(--accent-ink); background: var(--accent); width: 22px; height: 22px; border-radius: 50%; display: inline-grid; place-items: center; }
+.f { display: grid; gap: 6px; min-width: 0; align-content: start; }
+.f > label, .f .lab { font-size: 15px; font-weight: 600; }
+.f small, .help { color: var(--muted); font-size: 13px; }
+select { width: 100%; font: 16px var(--body); color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 9px 10px; }
+button:focus-visible, select:focus-visible, a:focus-visible, .seg input:focus-visible + span { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+canvas { display: block; width: 100%; max-width: 100%; aspect-ratio: 1; border-radius: 10px; border: 1px solid var(--line); background: var(--bg); cursor: crosshair; }
+.maplegend { display: flex; align-items: center; gap: 8px; font-family: var(--mono); font-size: 12px; color: var(--muted); }
+.maplegend .ramp { flex: 1; height: 8px; border-radius: 4px; }
+.where { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 14px; color: var(--muted); }
+.where b { color: var(--ink); font-weight: 600; }
+
+.row3 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+@media (max-width: 400px) { .row3 { grid-template-columns: minmax(0, 1fr); } }
+.stepper { display: grid; grid-template-columns: 44px minmax(0, 1fr) 44px; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; background: var(--bg); }
+.stepper button { border: 0; background: transparent; color: var(--ink); font: 600 20px var(--body); cursor: pointer; }
+.stepper button:hover { background: var(--line); }
+.stepper output { text-align: center; font-family: var(--mono); font-size: 17px; padding: 9px 0; font-variant-numeric: tabular-nums; }
+
+/* 5-level scales */
+.seg { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; }
+.seg label { position: relative; cursor: pointer; }
+.seg input { position: absolute; opacity: 0; inset: 0; margin: 0; }
+.seg span { display: grid; gap: 4px; justify-items: center; text-align: center; padding: 10px 4px 8px; border: 1px solid var(--line); border-radius: 8px; font-size: 13px; font-weight: 600; line-height: 1.2; background: var(--bg); height: 100%; }
+.seg span i { display: flex; gap: 2px; }
+.seg span i b { width: 6px; height: 12px; border-radius: 2px; background: var(--line); }
+.seg span i b.on { background: var(--poppy); }
+.seg input:checked + span { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, var(--panel)); color: var(--ink); }
+@media (max-width: 460px) { .seg span { font-size: 12px; padding-inline: 2px; } }
+
+/* result */
+.result { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 72px); display: grid; gap: 16px; }
+@media (max-width: 900px) { .result { position: static; } }
+.res-top { background: var(--accent); color: var(--accent-ink); border-radius: 14px; padding: 22px; display: grid; gap: 6px; }
+.res-top .lab { font-family: var(--mono); font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; opacity: 0.85; }
+.res-top .price { font-family: var(--display); font-weight: 800; font-size: clamp(38px, 6vw, 54px); line-height: 1; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+.res-top .range { font-family: var(--mono); font-size: 13px; opacity: 0.9; }
+.res-top .place { font-size: 15px; opacity: 0.95; }
+.res-top .then { display: flex; flex-wrap: wrap; gap: 4px 12px; align-items: baseline; margin-top: 8px; padding-top: 10px; border-top: 1px solid color-mix(in srgb, var(--accent-ink) 30%, transparent); font-size: 14px; }
+.res-top .then b { font-family: var(--mono); font-weight: 500; font-size: 18px; font-variant-numeric: tabular-nums; }
+.list li .two { display: flex; gap: 14px; align-items: baseline; }
+.list li .two small { font-family: var(--mono); font-size: 12px; color: var(--muted); }
+.growth { display: grid; gap: 8px; }
+.gr { display: grid; grid-template-columns: 210px minmax(0, 1fr) 64px; gap: 12px; align-items: center; font-size: 14px; }
+.gr .track { height: 14px; position: relative; }
+.gr .fill { position: absolute; inset: 0 auto 0 0; border-radius: 0 4px 4px 0; background: color-mix(in srgb, var(--accent) 45%, var(--line)); }
+.gr.sel .fill { background: var(--poppy); }
+.gr.sel span:first-child { font-weight: 600; }
+.gr .v { font-family: var(--mono); text-align: right; font-variant-numeric: tabular-nums; }
+@media (max-width: 560px) { .gr { grid-template-columns: 130px minmax(0, 1fr) 52px; font-size: 13px; } }
+.meter { display: grid; gap: 6px; }
+.meter .bar2 { position: relative; height: 10px; border-radius: 5px; }
+.meter .mk { position: absolute; top: -4px; width: 3px; height: 18px; border-radius: 2px; background: var(--ink); transform: translateX(-1px); transition: left .25s; }
+@media (prefers-reduced-motion: reduce) { .meter .mk { transition: none; } }
+.meter .ends { display: flex; justify-content: space-between; font-family: var(--mono); font-size: 11px; color: var(--muted); }
+.meter p { margin: 0; font-size: 14px; }
+.list h3 { font-family: var(--display); font-size: 15px; margin: 0 0 8px; }
+.list ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
+.list li { background: var(--panel); display: flex; justify-content: space-between; gap: 12px; padding: 9px 14px; font-size: 15px; }
+.list li b { font-family: var(--mono); font-weight: 500; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.pos { color: var(--up); } .neg { color: var(--down); }
+.fine { font-size: 13px; color: var(--muted); margin: 0; }
+
+section.band { padding-block: 40px; border-top: 1px solid var(--line); }
+section.band h2 { font-family: var(--display); font-weight: 700; font-size: clamp(22px, 3vw, 28px); margin: 0 0 6px; letter-spacing: -0.01em; }
+section.band .sub { color: var(--muted); margin: 0 0 18px; max-width: 64ch; }
+.how { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 24px; }
+@media (max-width: 1000px) { .how { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 760px) { .how { grid-template-columns: minmax(0, 1fr); } }
+.how h3 { font-family: var(--display); font-size: 16px; margin: 0 0 6px; }
+.how p { margin: 0; color: var(--muted); font-size: 15px; }
+.how .k { font-family: var(--mono); color: var(--ink); }
+footer { padding-block: 24px 40px; color: var(--muted); font-size: 13px; border-top: 1px solid var(--line); }
+</style>
+
+<header class="bar gutter">
+  <div class="inner">
+    <a class="brand" href="#top">
+      <svg viewBox="0 0 26 26" aria-hidden="true"><path d="M3 12 13 4l10 8v10H3z" fill="var(--accent)"/><circle cx="19" cy="7" r="4" fill="var(--poppy)"/></svg>
+      Golden State Home Value
+    </a>
+    <nav><a href="#estimate">Estimate</a><a href="#growthSec">1990 vs 2026</a><a href="#how">How it works</a></nav>
+  </div>
+</header>
+
+<main id="top">
+  <div class="gutter"><div class="inner hero">
+    <h1>What would a home cost in California?</h1>
+    <p>Pick a place on the map, answer a few simple questions, and get a 2026 price estimate, next to what the same home cost in 1990.</p>
+  </div></div>
+
+  <div class="gutter" id="estimate"><div class="inner est">
+    <form class="card" id="form" novalidate>
+      <fieldset>
+        <legend><span class="n">1</span>Where is it?</legend>
+        <div class="f">
+          <label for="city">City or neighbourhood</label>
+          <select id="city"></select>
+        </div>
+        <canvas id="cv" aria-label="Map of California. Dots are neighbourhoods coloured by price; rings are named places. Click to choose a location."></canvas>
+        <div class="maplegend"><span>cheaper</span><div class="ramp" id="ramp"></div><span>pricier</span></div>
+        <div class="where"><span>Location: <b id="placeName"></b></span><span>Coast: <b id="coast"></b></span></div>
+        <small class="help">Tap a ring to jump to a named place, or anywhere else for an exact spot. Distance to the coast is filled in for you.</small>
+      </fieldset>
+
+      <fieldset>
+        <legend><span class="n">2</span>The home</legend>
+        <div class="row3">
+          <div class="f"><span class="lab" id="roomsL">Rooms in total</span>
+            <div class="stepper" role="group" aria-labelledby="roomsL"><button type="button" data-step="rooms" data-d="-1" aria-label="Fewer rooms">−</button><output id="rooms">5</output><button type="button" data-step="rooms" data-d="1" aria-label="More rooms">+</button></div>
+            <small>Count bedrooms, living room, kitchen…</small></div>
+          <div class="f"><span class="lab" id="bedsL">Of which bedrooms</span>
+            <div class="stepper" role="group" aria-labelledby="bedsL"><button type="button" data-step="beds" data-d="-1" aria-label="Fewer bedrooms">−</button><output id="beds">2</output><button type="button" data-step="beds" data-d="1" aria-label="More bedrooms">+</button></div></div>
+        </div>
+        <div class="f">
+          <span class="lab" id="ageL">How old is the building?</span>
+          <div class="seg" role="radiogroup" aria-labelledby="ageL" id="age"></div>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend><span class="n">3</span>The neighbourhood</legend>
+        <div class="f">
+          <span class="lab" id="incL">How well-off is the neighbourhood?</span>
+          <div class="seg" role="radiogroup" aria-labelledby="incL" id="income"></div>
+          <small id="incHelp"></small>
+        </div>
+      </fieldset>
+    </form>
+
+    <aside class="result" aria-live="polite">
+      <div class="res-top">
+        <div class="lab">Estimated value in 2026</div>
+        <div class="price" id="price">$0</div>
+        <div class="range" id="range"></div>
+        <div class="place" id="resPlace"></div>
+        <div class="then"><span>Same home in 1990</span><b id="price90"></b><span id="mult"></span></div>
+      </div>
+      <div class="meter">
+        <div class="bar2" id="bar2"><div class="mk" id="mk"></div></div>
+        <div class="ends"><span>cheapest areas</span><span>priciest areas</span></div>
+        <p id="pctText"></p>
+      </div>
+      <div class="list"><h3>What would change the price</h3><ul id="what"></ul></div>
+      <div class="list"><h3>The same home somewhere else <small class="help" style="font-weight:400">2026 · 1990</small></h3><ul id="elsewhere"></ul></div>
+      <p class="fine">The model predicts 1990 prices; 2026 values apply each metro area's official price growth since then (FHFA House Price Index, Q2 2026). An estimate, not a valuation.</p>
+    </aside>
+  </div></div>
+
+  <section class="band gutter" id="growthSec"><div class="inner">
+    <h2>How much prices grew since 1990</h2>
+    <p class="sub">Price multiplier from April 1990 to April 2026 for each metro area, from the FHFA House Price Index. Your selected area is highlighted. California as a whole: <b id="caMult"></b>.</p>
+    <div class="growth" id="growth"></div>
+  </div></section>
+
+  <section class="band gutter" id="how"><div class="inner">
+    <h2>How it works</h2>
+    <p class="sub">A machine learning model learned how location, home size and neighbourhood affect price, then was tested on neighbourhoods it had never seen.</p>
+    <div class="how" id="howGrid"></div>
+  </div></section>
+</main>
+<footer class="gutter"><div class="inner">Data: 1990 US census, California housing (20,640 block groups); FHFA All-Transactions House Price Index via FRED, Q2 2026. Model: histogram gradient boosting, running in your browser.</div></footer>
+
+<script>
+const MODEL = /*MODEL*/null;
+const STATS = /*STATS*/null;
+const POINTS = /*POINTS*/null;
+const $ = id => document.getElementById(id);
+const clamp = (v, a, b) => Math.min(Math.max(v, a), b);
+const usd = n => "$" + Math.round(n).toLocaleString("en-US");
+const r1k = n => Math.round(n / 1000) * 1000;
+
+const PLACES = [
+  ["Bay Area", [["San Francisco", 37.77, -122.42], ["Oakland", 37.80, -122.27], ["Berkeley", 37.87, -122.27], ["Palo Alto", 37.44, -122.14], ["San Jose", 37.34, -121.89]]],
+  ["Central Coast", [["Santa Cruz", 36.97, -122.03], ["Monterey", 36.60, -121.89], ["Santa Barbara", 34.42, -119.70]]],
+  ["Los Angeles area", [["Downtown LA", 34.05, -118.25], ["Santa Monica", 34.02, -118.49], ["Beverly Hills", 34.07, -118.40], ["Pasadena", 34.15, -118.14], ["Long Beach", 33.77, -118.19], ["Irvine", 33.68, -117.83]]],
+  ["Inland South", [["Riverside", 33.95, -117.40], ["San Bernardino", 34.11, -117.29], ["Palm Springs", 33.83, -116.55]]],
+  ["San Diego area", [["San Diego", 32.72, -117.16], ["La Jolla", 32.84, -117.27]]],
+  ["Central Valley", [["Sacramento", 38.58, -121.49], ["Stockton", 37.96, -121.29], ["Fresno", 36.74, -119.79], ["Bakersfield", 35.37, -119.02]]],
+  ["North", [["Redding", 40.59, -122.39], ["Eureka", 40.80, -124.16]]]
+];
+const FLAT = PLACES.flatMap(([, list]) => list);
+const MAJOR = ["San Francisco", "Downtown LA", "San Diego", "Sacramento", "Fresno"];
+const COAST = { "<1H OCEAN": "under 1 hour away", "INLAND": "inland", "ISLAND": "island", "NEAR BAY": "near the bay", "NEAR OCEAN": "near the ocean" };
+const AGES = [["New", "under 10 yrs", 5], ["Recent", "10–20 yrs", 15], ["Mature", "20–30 yrs", 25], ["Older", "30–40 yrs", 35], ["Old", "40+ yrs", 47]];
+const INCOMES = ["Low", "Modest", "Middle", "Good", "High"];
+const state = { lat: 34.05, lon: -118.25, place: "Downtown LA", ocean: "<1H OCEAN", rooms: 5, beds: 2, age: 2, income: 2 };
+const LIM = { rooms: [2, 10], beds: [0, 6] };
+
+// FHFA All-Transactions House Price Index (via FRED): [metro, centre lat, centre lon, index Apr 1990, index Apr 2026]
+const METROS = [
+  ["San Francisco–San Mateo", 37.70, -122.42, 113.19, 506.53], ["Oakland–Berkeley", 37.80, -122.15, 109.96, 456.00],
+  ["San Jose–Santa Clara", 37.30, -121.90, 111.67, 558.75], ["Santa Cruz", 36.98, -121.95, 106.03, 460.83],
+  ["Salinas–Monterey", 36.55, -121.60, 99.85, 439.62], ["Santa Barbara", 34.65, -120.10, 113.69, 505.23],
+  ["Los Angeles–Long Beach", 34.05, -118.25, 126.67, 557.38], ["Orange County (Irvine)", 33.72, -117.85, 120.31, 584.22],
+  ["Riverside–San Bernardino", 33.90, -117.10, 121.72, 501.05], ["San Diego", 32.85, -117.05, 111.15, 578.75],
+  ["Sacramento", 38.65, -121.25, 108.14, 408.95], ["Stockton", 37.95, -121.25, 108.36, 377.58],
+  ["Fresno", 36.75, -119.75, 90.10, 389.14], ["Bakersfield", 35.35, -119.00, 99.33, 362.49], ["Redding", 40.60, -122.35, 89.70, 334.27]
+];
+const CA_INDEX = ["California (state average)", 0, 0, 228.07, 974.97];
+const PLACE_METRO = { "San Francisco": 0, "Oakland": 1, "Berkeley": 1, "Palo Alto": 2, "San Jose": 2, "Santa Cruz": 3, "Monterey": 4,
+  "Santa Barbara": 5, "Downtown LA": 6, "Santa Monica": 6, "Beverly Hills": 6, "Pasadena": 6, "Long Beach": 6, "Irvine": 7,
+  "Riverside": 8, "San Bernardino": 8, "Palm Springs": 8, "San Diego": 9, "La Jolla": 9, "Sacramento": 10, "Stockton": 11,
+  "Fresno": 12, "Bakersfield": 13, "Redding": 14 };
+const growth = m => m[4] / m[3];
+function metroFor(place, lat, lon) {
+  if (place in PLACE_METRO) return METROS[PLACE_METRO[place]];
+  let best = CA_INDEX, bd = 0.6 ** 2;  // further than ~60 km from any metro centre: use the state index
+  for (const m of METROS) { const d = (m[1] - lat) ** 2 + (m[2] - lon) ** 2; if (d < bd) { bd = d; best = m; } }
+  return best;
+}
+
+// ---- model (same steps as the Python pipeline) ----
+function predict(s) {
+  const row = {
+    longitude: s.lon, latitude: s.lat, housing_median_age: AGES[s.age][2],
+    median_income: STATS.income_levels[s.income], rooms_per_household: s.rooms,
+    bedrooms_per_room: Math.max(s.beds, 0.5) / s.rooms, people_per_household: STATS.people
+  };
+  const x = MODEL.numeric.map(c => row[c]);
+  MODEL.categories.forEach(c => x.push(s.ocean === c ? 1 : 0));
+  let t = MODEL.baseline;
+  for (const tr of MODEL.trees) { let i = 0; while (tr[i][4] === null) i = x[tr[i][0]] <= tr[i][1] ? tr[i][2] : tr[i][3]; t += tr[i][4]; }
+  return Math.max(t, 15000);
+}
+function nearestOcean(lat, lon) {
+  let best = null, bd = Infinity;
+  for (const p of POINTS) { const d = (p[0] - lon) ** 2 + (p[1] - lat) ** 2; if (d < bd) { bd = d; best = p; } }
+  return MODEL.categories[best[3]];
+}
+function nearestPlace(lat, lon) {
+  let best = FLAT[0], bd = Infinity;
+  for (const p of FLAT) { const d = (p[1] - lat) ** 2 + (p[2] - lon) ** 2; if (d < bd) { bd = d; best = p; } }
+  return [best, Math.sqrt(bd)];
+}
+
+// ---- build the 5-level scales ----
+function scale(id, items, key) {
+  $(id).innerHTML = items.map((it, i) => `<label><input type="radio" name="${id}" value="${i}" ${i === state[key] ? "checked" : ""}><span><i>${[0, 1, 2, 3, 4].map(j => `<b class="${j <= i ? "on" : ""}"></b>`).join("")}</i>${it[0]}${it[1] ? `<small class="help" style="font-weight:400">${it[1]}</small>` : ""}</span></label>`).join("");
+  $(id).addEventListener("change", e => { state[key] = +e.target.value; update(); });
+}
+scale("age", AGES, "age");
+scale("income", INCOMES.map((n, i) => [n, "$" + Math.round(STATS.income_levels[i] * 10) + "k/yr"]), "income");
+
+// ---- place picker ----
+$("city").innerHTML = PLACES.map(([g, list]) => `<optgroup label="${g}">${list.map(p => `<option>${p[0]}</option>`).join("")}</optgroup>`).join("") + `<option value="custom" hidden>Custom spot</option>`;
+function setPlace(name) {
+  const p = FLAT.find(q => q[0] === name);
+  Object.assign(state, { place: name, lat: p[1], lon: p[2], ocean: nearestOcean(p[1], p[2]) });
+  $("city").value = name; update();
+}
+$("city").addEventListener("change", () => setPlace($("city").value));
+
+document.querySelectorAll("[data-step]").forEach(b => b.addEventListener("click", () => {
+  const k = b.dataset.step; state[k] = clamp(state[k] + +b.dataset.d, ...LIM[k]);
+  if (state.beds >= state.rooms) state.beds = state.rooms - 1;
+  ["rooms", "beds"].forEach(q => $(q).textContent = state[q]);
+  update();
+}));
+$("form").addEventListener("submit", e => e.preventDefault());
+
+// ---- map ----
+const LON0 = -124.6, LON1 = -114.0, LAT0 = 32.4, LAT1 = 42.1;
+const RAMP = ["#2b4c7e", "#3f7fa6", "#5fb3b3", "#c9c95b", "#f2b134"];
+$("ramp").style.background = `linear-gradient(90deg, ${RAMP.join(",")})`;
+$("bar2").style.background = `linear-gradient(90deg, ${RAMP.join(",")})`;
+const cv = $("cv"), ctx = cv.getContext("2d");
+const xy = (lon, lat, w, h) => [(lon - LON0) / (LON1 - LON0) * w, (LAT1 - lat) / (LAT1 - LAT0) * h];
+const colorFor = k => RAMP[Math.round(clamp((k - 15) / 485, 0, 1) * (RAMP.length - 1))];
+const SORTED = POINTS.slice().sort((a, b) => a[2] - b[2]);
+const css = v => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+function drawMap() {
+  const dpr = devicePixelRatio || 1, w = cv.clientWidth, h = cv.clientHeight;
+  if (!w) return;
+  cv.width = w * dpr; cv.height = h * dpr; ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  const r = Math.max(1.3, w / 420);
+  ctx.globalAlpha = 0.7;
+  for (const p of SORTED) { const [x, y] = xy(p[0], p[1], w, h); ctx.fillStyle = colorFor(p[2]); ctx.beginPath(); ctx.arc(x, y, r, 0, 7); ctx.fill(); }
+  ctx.globalAlpha = 1;
+  const ink = css("--ink"), panel = css("--panel");
+  ctx.font = `600 ${w < 420 ? 11 : 12}px "Source Sans 3", system-ui, sans-serif`;
+  for (const p of FLAT) {
+    const [x, y] = xy(p[2], p[1], w, h), sel = p[0] === state.place;
+    ctx.lineWidth = 1.5; ctx.strokeStyle = ink; ctx.fillStyle = panel;
+    ctx.beginPath(); ctx.arc(x, y, 4, 0, 7); ctx.fill(); ctx.stroke();
+    if (MAJOR.includes(p[0]) && !sel) label(p[0], x + 7, y + 4, ink, panel);
+  }
+  const [px, py] = xy(state.lon, state.lat, w, h);
+  ctx.strokeStyle = ink; ctx.lineWidth = 2.5; ctx.beginPath(); ctx.arc(px, py, 10, 0, 7); ctx.stroke();
+  ctx.fillStyle = ink; ctx.beginPath(); ctx.arc(px, py, 3.5, 0, 7); ctx.fill();
+  label(state.place.replace(/^Near /, "near "), px + 14, py + 4, ink, panel, true);
+}
+function label(t, x, y, ink, halo, bold) {
+  const w = ctx.measureText(t).width, W = cv.clientWidth;
+  if (x + w > W - 4) x = x - w - (bold ? 28 : 14);
+  ctx.lineWidth = 4; ctx.strokeStyle = halo; ctx.strokeText(t, x, y);
+  ctx.fillStyle = ink; ctx.fillText(t, x, y);
+}
+cv.addEventListener("click", e => {
+  const b = cv.getBoundingClientRect(), w = b.width, h = b.height;
+  const mx = e.clientX - b.left, my = e.clientY - b.top;
+  const hit = FLAT.find(p => { const [x, y] = xy(p[2], p[1], w, h); return (x - mx) ** 2 + (y - my) ** 2 < 12 ** 2; });
+  if (hit) return setPlace(hit[0]);
+  const lon = +(LON0 + mx / w * (LON1 - LON0)).toFixed(2), lat = +(LAT1 - my / h * (LAT1 - LAT0)).toFixed(2);
+  const [np] = nearestPlace(lat, lon);
+  Object.assign(state, { lat, lon, ocean: nearestOcean(lat, lon), place: "Near " + np[0] });
+  $("city").value = "custom"; update();
+});
+
+// ---- output ----
+function update() {
+  const p = predict(state), metro = metroFor(state.place, state.lat, state.lon), g = growth(metro);
+  $("price").textContent = usd(r1k(p * g));
+  $("range").textContent = `Likely ${usd(r1k(Math.max(p - STATS.mae, 15000) * g))} – ${usd(r1k((p + STATS.mae) * g))}`;
+  $("resPlace").textContent = `${state.rooms}-room home in ${state.place}`;
+  $("price90").textContent = usd(r1k(p));
+  $("mult").textContent = `× ${g.toFixed(2)} growth in ${metro[0]}`;
+  $("placeName").textContent = state.place;
+  $("coast").textContent = COAST[state.ocean];
+  const below = STATS.price_pcts.filter(v => v < p).length;
+  const pct = clamp((below - 1) * 5, 0, 100);
+  $("mk").style.left = pct + "%";
+  $("pctText").textContent = `Pricier than about ${pct}% of California neighbourhoods.`;
+
+  const delta = ch => (predict({ ...state, ...ch }) - p) * g;
+  const fmtD = d => { const k = Math.round(d / 1000); return `<b class="${k > 0 ? "pos" : k < 0 ? "neg" : ""}">${k > 0 ? "+" : k < 0 ? "−" : "±"}$${Math.abs(k)}k</b>`; };
+  const tries = [
+    state.rooms < 10 && ["One more room (not a bedroom)", { rooms: state.rooms + 1 }],
+    state.beds > 1 && ["Turn a bedroom into a living room", { beds: state.beds - 1 }],
+    state.income < 4 && ["A better-off neighbourhood (one level up)", { income: state.income + 1 }],
+    state.income > 0 && ["A less well-off neighbourhood (one level down)", { income: state.income - 1 }]
+  ].filter(Boolean);
+  $("what").innerHTML = tries.map(([l, ch]) => `<li><span>${l}</span>${fmtD(delta(ch))}</li>`).join("");
+
+  const others = ["San Francisco", "Downtown LA", "San Diego", "Sacramento", "Fresno", "Palo Alto"].filter(n => n !== state.place).slice(0, 5);
+  $("elsewhere").innerHTML = others.map(n => {
+    const q = FLAT.find(x => x[0] === n), v = predict({ ...state, lat: q[1], lon: q[2], ocean: nearestOcean(q[1], q[2]) });
+    return `<li><span>${n}</span><span class="two"><small>${usd(r1k(v))}</small><b>${usd(r1k(v * growth(metroFor(n))))}</b></span></li>`;
+  }).join("");
+  $("incHelp").textContent = `Typical household income of the area, in 1990 dollars. "Middle" is about $${Math.round(STATS.income_levels[2] * 10)}k a year.`;
+  const top = Math.max(...METROS.map(growth));
+  $("growth").innerHTML = METROS.slice().sort((a, b) => growth(b) - growth(a)).map(m =>
+    `<div class="gr${m === metro ? " sel" : ""}"><span>${m[0]}</span><div class="track"><div class="fill" style="width:${(growth(m) / top * 100).toFixed(1)}%"></div></div><span class="v">×${growth(m).toFixed(2)}</span></div>`).join("");
+  drawMap();
+}
+$("caMult").textContent = "×" + growth(CA_INDEX).toFixed(2);
+
+$("howGrid").innerHTML = `
+  <div><h3>The data</h3><p>The 1990 US census split California into <span class="k">20,640</span> small neighbourhoods. For each one it records location, typical income, building age, rooms per home and the median home value.</p></div>
+  <div><h3>The model</h3><p>Histogram gradient boosting: <span class="k">${MODEL.trees.length}</span> small decision trees, each correcting the last. It tied for first in our comparison of six algorithms, and follows common-sense rules: a richer area or more living space never lowers the price.</p></div>
+  <div><h3>How accurate</h3><p>On neighbourhoods it never saw, it is off by about <span class="k">${usd(STATS.mae)}</span> on average. Your answers are turned into the same numbers the model learned from, so "Middle" income means the middle fifth of California.</p></div>
+  <div><h3>Bringing it to 2026</h3><p>The model only knows 1990 prices. We multiply by how much homes in that metro area rose in value from April 1990 to April 2026, using the official FHFA House Price Index. It tracks repeat sales of the same homes, so it measures price growth, not bigger houses.</p></div>`;
+
+addEventListener("resize", drawMap);
+matchMedia("(prefers-color-scheme: dark)").addEventListener("change", drawMap);
+setPlace("Downtown LA");
+</script>

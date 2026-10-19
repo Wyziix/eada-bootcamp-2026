@@ -1,0 +1,293 @@
+<title>House Price Model Showdown</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: report column. Verdict, leaderboard table, then three charts and plain-language model notes. Same family as the price estimator. */
+:root {
+  --bg: #f3f5f6;
+  --panel: #ffffff;
+  --ink: #15232e;
+  --muted: #5a6872;
+  --line: #d9e0e4;
+  --accent: #1d5f8a;
+  --soft: #9fb4c3;
+  --poppy: #d9822b;
+  --display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --body: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0f171d; --panel: #17222a; --ink: #e6edf1; --muted: #93a3ad; --line: #2a3843;
+    --accent: #6fb3dd; --soft: #46606f; --poppy: #f0a14d; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0f171d; --panel: #17222a; --ink: #e6edf1; --muted: #93a3ad; --line: #2a3843;
+  --accent: #6fb3dd; --soft: #46606f; --poppy: #f0a14d; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--ink); font-family: var(--body); font-size: 15px; line-height: 1.55;
+  padding-block: 28px 56px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+.wrap { max-width: 1040px; margin: 0 auto; display: grid; gap: 28px; }
+.eyebrow { font-family: var(--mono); font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--poppy); margin-bottom: 6px; }
+h1 { font-family: var(--display); font-weight: 800; font-size: clamp(28px, 5vw, 42px); line-height: 1.05; margin: 0; letter-spacing: -0.01em; text-wrap: balance; }
+h2 { font-family: var(--display); font-weight: 600; font-size: 21px; margin: 0 0 4px; text-wrap: balance; }
+.lede { color: var(--muted); max-width: 66ch; margin: 10px 0 0; }
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 20px; min-width: 0; }
+.hint { color: var(--muted); font-size: 13px; margin: 0 0 14px; max-width: 72ch; }
+
+.verdict { display: grid; grid-template-columns: minmax(0, 1.3fr) repeat(3, minmax(0, 1fr)); gap: 20px; align-items: end; }
+.verdict .big { font-family: var(--display); font-weight: 800; font-size: clamp(24px, 3.4vw, 32px); line-height: 1.1; color: var(--accent); }
+.verdict .k { font-family: var(--mono); font-size: 26px; font-variant-numeric: tabular-nums; }
+.verdict .l { font-size: 12px; color: var(--muted); }
+@media (max-width: 760px) { .verdict { grid-template-columns: repeat(3, minmax(0, 1fr)); } .verdict > :first-child { grid-column: 1 / -1; } .verdict .k { font-size: 20px; } }
+
+.tablewrap { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; min-width: 760px; font-size: 14px; }
+th, td { padding: 10px 10px; text-align: right; border-bottom: 1px solid var(--line); white-space: nowrap; }
+th { font-family: var(--mono); font-size: 11px; font-weight: 500; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); vertical-align: bottom; }
+th:nth-child(-n+2), td:nth-child(-n+2) { text-align: left; }
+td { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+td.name { font-family: var(--body); font-weight: 600; }
+tr.top td { background: color-mix(in srgb, var(--accent) 9%, transparent); }
+.pill { display: inline-block; font-family: var(--mono); font-size: 11px; padding: 1px 8px; border-radius: 999px; border: 1px solid var(--accent); color: var(--accent); margin-left: 8px; font-weight: 500; }
+
+.charts { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 28px; }
+@media (max-width: 860px) { .charts { grid-template-columns: minmax(0, 1fr); } }
+svg { display: block; width: 100%; height: auto; overflow: visible; }
+svg text { font-family: var(--mono); font-size: 11px; fill: var(--muted); }
+svg .lbl { font-family: var(--body); font-size: 13px; fill: var(--ink); }
+svg .grid { stroke: var(--line); stroke-width: 1; }
+.multiples { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; }
+@media (max-width: 760px) { .multiples { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.multiples h3 { font-family: var(--body); font-size: 14px; font-weight: 600; margin: 0 0 2px; }
+.multiples .sub { font-family: var(--mono); font-size: 11px; color: var(--muted); margin-bottom: 4px; }
+
+.models { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px 28px; }
+@media (max-width: 760px) { .models { grid-template-columns: minmax(0, 1fr); } }
+.models h3 { font-family: var(--display); font-weight: 600; font-size: 17px; margin: 0; display: flex; flex-wrap: wrap; gap: 4px 8px; align-items: baseline; }
+.models h3 span { font-family: var(--mono); font-size: 12px; color: var(--muted); font-weight: 400; }
+.models p { margin: 4px 0 0; font-size: 14px; }
+.models .take { color: var(--muted); }
+
+dl { display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 10px 18px; margin: 0; font-size: 14px; }
+dt { font-family: var(--mono); font-weight: 500; }
+dd { margin: 0; color: var(--ink); }
+@media (max-width: 520px) { dl { grid-template-columns: minmax(0, 1fr); gap: 2px; } dd { margin-bottom: 10px; } }
+ol.takeaways { margin: 0; padding-left: 20px; display: grid; gap: 8px; max-width: 74ch; }
+
+#tip { position: fixed; pointer-events: none; background: var(--ink); color: var(--bg); font-family: var(--mono); font-size: 12px; padding: 6px 9px; border-radius: 6px; z-index: 20; white-space: nowrap; }
+.hit { fill: transparent; cursor: default; }
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">California housing · 6 algorithms · same 80/20 split</div>
+    <h1>House Price Model Showdown</h1>
+    <p class="lede" id="lede"></p>
+  </header>
+
+  <section class="panel verdict" id="verdict"></section>
+
+  <section class="panel">
+    <h2>Leaderboard</h2>
+    <p class="hint">Sorted by average error on the test houses, which no model saw during training. Lower is better for every column except R² and "within 10%".</p>
+    <div class="tablewrap"><table id="board"></table></div>
+  </section>
+
+  <section class="charts">
+    <div class="panel">
+      <h2>How far off, on average</h2>
+      <p class="hint">Mean absolute error in dollars. The thin line shows the cross-validation range (±2 standard deviations over 5 rounds); a short line means a stable model.</p>
+      <svg id="maeChart" role="img" aria-label="Bar chart of mean absolute error by model"></svg>
+    </div>
+    <div class="panel">
+      <h2>Accuracy vs training time</h2>
+      <p class="hint">Bottom-left is best: low error and quick to train. The time axis is logarithmic.</p>
+      <svg id="speedChart" role="img" aria-label="Scatter of training time against error"></svg>
+    </div>
+  </section>
+
+  <section class="panel">
+    <h2>Predicted vs actual price</h2>
+    <p class="hint">The same 400 test houses for each model. A perfect model puts every dot on the dashed diagonal. Look at the top-right corner: every model struggles with the most expensive areas.</p>
+    <div class="multiples" id="multiples"></div>
+  </section>
+
+  <section class="panel">
+    <h2>What each KPI means</h2>
+    <dl>
+      <dt>MAE</dt><dd>Mean absolute error. On average, how many dollars the prediction is off. The easiest one to explain to anyone.</dd>
+      <dt>RMSE</dt><dd>Root mean squared error. Like MAE but big misses count extra. If RMSE is much bigger than MAE, the model makes some large mistakes.</dd>
+      <dt>R²</dt><dd>Share of the price differences the model explains. 1.0 is perfect, 0 means no better than always guessing the average price.</dd>
+      <dt>MAPE</dt><dd>Mean absolute percentage error. Average error as a % of the real price, so a $20k miss on a $100k house counts more than on a $400k one.</dd>
+      <dt>Within 10%</dt><dd>Share of houses where the prediction lands within 10% of the real price. A practical "how often is it close enough" number.</dd>
+      <dt>CV MAE</dt><dd>MAE averaged over 5 different train/validation splits of the training data. The ± tells you how much the score moves depending on which houses it trains on.</dd>
+      <dt>Train</dt><dd>Seconds to fit the model on the training houses, on a 4-core machine.</dd>
+      <dt>Size</dt><dd>How big the saved model file is. Matters if you put it in an app or a web page.</dd>
+    </dl>
+  </section>
+
+  <section class="panel">
+    <h2>The six models</h2>
+    <p class="hint">What each one does, in plain words, and what this test says about it.</p>
+    <div class="models" id="models"></div>
+  </section>
+
+  <section class="panel">
+    <h2>Takeaways</h2>
+    <ol class="takeaways" id="takeaways"></ol>
+  </section>
+</div>
+<div id="tip" hidden></div>
+
+<script>
+const DATA = /*DATA*/null;
+const R = DATA.results;
+const $ = id => document.getElementById(id);
+const usd = n => "$" + Math.round(n).toLocaleString("en-US");
+const k = n => "$" + (n / 1000).toFixed(1) + "k";
+const pct = n => (n * 100).toFixed(1) + "%";
+const best = R[0], worst = R[R.length - 1];
+const tie = R.filter(r => r.mae - best.mae < 500);
+const short = n => n.replace("Histogram gradient boosting", "Hist. gradient boosting");
+const NS = "http://www.w3.org/2000/svg";
+function el(tag, attrs, parent, text) {
+  const e = document.createElementNS(NS, tag);
+  for (const a in attrs) e.setAttribute(a, attrs[a]);
+  if (text != null) e.textContent = text;
+  if (parent) parent.append(e);
+  return e;
+}
+const tip = $("tip");
+function hover(node, text) {
+  node.addEventListener("mousemove", e => {
+    tip.textContent = text; tip.hidden = false;
+    tip.style.left = Math.max(8, Math.min(e.clientX + 14, innerWidth - tip.offsetWidth - 8)) + "px";
+    tip.style.top = (e.clientY + 14) + "px";
+  });
+  node.addEventListener("mouseleave", () => tip.hidden = true);
+}
+
+// ---- header + verdict ----
+$("lede").textContent = `Six algorithms, trained on ${DATA.rows_train.toLocaleString("en-US")} California blocks and tested on ${DATA.rows_test.toLocaleString("en-US")} they never saw. The typical test block's median home is worth ${usd(DATA.median_price)}.`;
+const winnerText = tie.length > 1 ? tie.map(r => r.name).join(" and ") + " tie for first" : best.name + " wins";
+$("verdict").innerHTML = `
+  <div><div class="eyebrow">Verdict</div><div class="big">${winnerText}</div></div>
+  <div><div class="k">${usd(best.mae)}</div><div class="l">average error (${pct(best.mape)} of price)</div></div>
+  <div><div class="k">${best.r2.toFixed(2)}</div><div class="l">R², vs ${worst.r2.toFixed(2)} for ${worst.name.toLowerCase()}</div></div>
+  <div><div class="k">${pct(best.within10)}</div><div class="l">of houses predicted within 10%</div></div>`;
+
+// ---- leaderboard ----
+const cols = [["#", (r, i) => i + 1], ["Model", r => r.name], ["MAE", r => usd(r.mae)], ["RMSE", r => usd(r.rmse)],
+  ["R²", r => r.r2.toFixed(3)], ["MAPE", r => pct(r.mape)], ["Within 10%", r => pct(r.within10)],
+  ["CV MAE (±)", r => usd(r.cv_mae) + " ± " + (r.cv_std / 1000).toFixed(1) + "k"],
+  ["Train", r => r.train_s < 0.1 ? r.train_s.toFixed(2) + " s" : r.train_s.toFixed(1) + " s"],
+  ["Size", r => r.size_kb >= 1024 ? (r.size_kb / 1024).toFixed(1) + " MB" : Math.round(r.size_kb) + " KB"]];
+let html = "<thead><tr>" + cols.map(c => `<th>${c[0]}</th>`).join("") + "</tr></thead><tbody>";
+R.forEach((r, i) => {
+  html += `<tr class="${tie.includes(r) ? "top" : ""}">` + cols.map((c, j) =>
+    `<td class="${j === 1 ? "name" : ""}">${c[1](r, i)}${j === 1 && tie.includes(r) ? '<span class="pill">best</span>' : ""}</td>`).join("") + "</tr>";
+});
+$("board").innerHTML = html + "</tbody>";
+
+// ---- MAE bars with CV range ----
+(function () {
+  const svg = $("maeChart"), W = 480, rowH = 40, L = 168, Rr = 56, T = 6, H = T + R.length * rowH + 26;
+  svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
+  const max = 50000, x = v => L + v / max * (W - L - Rr);
+  for (let v = 0; v <= max; v += 10000) {
+    el("line", { x1: x(v), x2: x(v), y1: T, y2: H - 22, class: "grid" }, svg);
+    el("text", { x: x(v), y: H - 6, "text-anchor": "middle" }, svg, "$" + v / 1000 + "k");
+  }
+  R.forEach((r, i) => {
+    const y = T + i * rowH, top = tie.includes(r);
+    el("text", { x: L - 10, y: y + rowH / 2 + 4, "text-anchor": "end", class: "lbl" }, svg, short(r.name));
+    const w = x(r.mae) - L, bh = 18, by = y + (rowH - bh) / 2;
+    el("path", { d: `M${L},${by} h${w - 4} a4,4 0 0 1 4,4 v${bh - 8} a4,4 0 0 1 -4,4 h${-(w - 4)} z`, fill: top ? "var(--accent)" : "var(--soft)" }, svg);
+    const lo = r.cv_mae - r.cv_std * 2, hi = r.cv_mae + r.cv_std * 2;
+    el("line", { x1: x(lo), x2: x(hi), y1: by + bh / 2, y2: by + bh / 2, stroke: "var(--ink)", "stroke-width": 1.5 }, svg);
+    el("text", { x: Math.max(x(r.mae), x(hi)) + 8, y: by + bh / 2 + 4, style: "fill: var(--ink)" }, svg, k(r.mae));
+    hover(el("rect", { x: 0, y, width: W, height: rowH, class: "hit" }, svg),
+      `${r.name}: test MAE ${usd(r.mae)} · CV ${usd(r.cv_mae)} ± ${usd(r.cv_std)}`);
+  });
+})();
+
+// ---- speed vs accuracy ----
+(function () {
+  const svg = $("speedChart"), W = 480, H = 300, L = 54, B = 34, T = 12, Rr = 16;
+  svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
+  const lx0 = Math.log10(0.01), lx1 = Math.log10(10);
+  const x = s => L + (Math.log10(Math.max(s, 0.01)) - lx0) / (lx1 - lx0) * (W - L - Rr);
+  const y0 = 25000, y1 = 50000, y = v => T + (y1 - v) / (y1 - y0) * (H - T - B);
+  [0.01, 0.1, 1, 10].forEach(s => {
+    el("line", { x1: x(s), x2: x(s), y1: T, y2: H - B, class: "grid" }, svg);
+    el("text", { x: x(s), y: H - B + 16, "text-anchor": "middle" }, svg, s + " s");
+  });
+  for (let v = y0; v <= y1; v += 5000) {
+    el("line", { x1: L, x2: W - Rr, y1: y(v), y2: y(v), class: "grid" }, svg);
+    el("text", { x: L - 8, y: y(v) + 4, "text-anchor": "end" }, svg, "$" + v / 1000 + "k");
+  }
+  el("text", { x: W - Rr, y: H - 2, "text-anchor": "end" }, svg, "training time →");
+  const place = { "XGBoost": [-10, -10, "end"], "Histogram gradient boosting": [10, 18, "start"], "Random forest": [-10, 4, "end"],
+    "Neural network": [0, -12, "middle"], "Decision tree": [10, 4, "start"], "Linear regression": [10, 4, "start"] };
+  R.forEach(r => {
+    const cx = x(r.train_s), cy = y(r.mae), top = tie.includes(r);
+    el("circle", { cx, cy, r: 6, fill: top ? "var(--accent)" : "var(--soft)", stroke: "var(--panel)", "stroke-width": 2 }, svg);
+    const [dx, dy, anchor] = place[r.name] || [10, 4, "start"];
+    el("text", { x: cx + dx, y: cy + dy, "text-anchor": anchor, class: "lbl", style: "font-size:12px" }, svg, r.name.replace("Histogram gradient boosting", "Hist. GB"));
+    hover(el("circle", { cx, cy, r: 16, class: "hit" }, svg), `${r.name}: ${r.train_s}s to train · MAE ${usd(r.mae)}`);
+  });
+})();
+
+// ---- predicted vs actual small multiples ----
+R.forEach(r => {
+  const box = document.createElement("div");
+  box.innerHTML = `<h3>${r.name}</h3><div class="sub">MAE ${k(r.mae)} · R² ${r.r2.toFixed(2)}</div>`;
+  const svg = el("svg", { viewBox: "0 0 220 222", role: "img", "aria-label": `${r.name} predicted versus actual` }, box);
+  const P = 30, S = 220 - P - 6, lo = 0, hi = 550;
+  const sx = v => P + (v - lo) / (hi - lo) * S, sy = v => 6 + (hi - v) / (hi - lo) * S;
+  [0, 250, 500].forEach(v => {
+    el("line", { x1: sx(v), x2: sx(v), y1: 6, y2: 6 + S, class: "grid" }, svg);
+    el("line", { x1: P, x2: P + S, y1: sy(v), y2: sy(v), class: "grid" }, svg);
+    el("text", { x: sx(v), y: 222, "text-anchor": "middle", style: "font-size:10px" }, svg, "$" + v + "k");
+    el("text", { x: P - 4, y: sy(v) + 3, "text-anchor": "end", style: "font-size:10px" }, svg, "$" + v + "k");
+  });
+  el("line", { x1: sx(lo), y1: sy(lo), x2: sx(hi), y2: sy(hi), stroke: "var(--poppy)", "stroke-width": 1.5, "stroke-dasharray": "4 3" }, svg);
+  r.sample.forEach(([a, p]) => el("circle", { cx: sx(a), cy: sy(Math.max(Math.min(p, hi), lo)), r: 2.2, fill: "var(--accent)", "fill-opacity": 0.45 }, svg));
+  hover(el("rect", { x: 0, y: 0, width: 220, height: 222, class: "hit" }, svg), `${r.name}: across = actual price, up = predicted`);
+  $("multiples").append(box);
+});
+
+// ---- model notes ----
+const TAKE = {
+  "Linear regression": "Last place. House prices don't follow straight lines, so it misses badly at both cheap and expensive ends. Still the right first baseline to beat.",
+  "Decision tree": "One tree already beats linear regression by about $10k. Easy to draw and explain, but blocky: it can only output a limited set of prices.",
+  "Random forest": "Averaging 100 trees cuts the error by about $5k vs one tree. Downside: by far the biggest file, too heavy for a web page.",
+  "XGBoost": "Joint best accuracy and the fastest of the strong models. A solid default for any table of numbers.",
+  "Neural network": "Decent but beaten by the boosted trees and random forest, which is typical on small tables. Slowest to train.",
+  "Histogram gradient boosting": "Ties XGBoost and needs no extra library. This is the one already running in your price estimator app."
+};
+R.forEach((r, i) => {
+  const d = document.createElement("div");
+  d.innerHTML = `<h3>${r.name} <span>#${i + 1} · MAE ${k(r.mae)}</span></h3><p>${r.how}</p><p class="take">${TAKE[r.name] || ""}</p>`;
+  $("models").append(d);
+});
+
+// ---- takeaways ----
+const lin = R.find(r => r.name === "Linear regression");
+[
+  `Boosted trees win. ${tie.map(r => r.name).join(" and ")} cut the average error from ${k(lin.mae)} (linear regression) to ${k(best.mae)}, a ${Math.round((1 - best.mae / lin.mae) * 100)}% improvement.`,
+  `More complex is not automatically better. The neural network loses to three tree methods while taking the longest to train.`,
+  `Even the best model is off by about ${pct(best.mape)} on average and gets only ${pct(best.within10)} of houses within 10%. The data has no house-level details like size or condition, so there's a ceiling.`,
+  `Cross-validation scores sit close to the test scores for every model, so none of them is badly overfitting.`,
+  `Next step to try: tune XGBoost or gradient boosting (more trees, different depth) with a grid search, and see if you can beat ${k(best.mae)}.`
+].forEach(t => { const li = document.createElement("li"); li.textContent = t; $("takeaways").append(li); });
+</script>

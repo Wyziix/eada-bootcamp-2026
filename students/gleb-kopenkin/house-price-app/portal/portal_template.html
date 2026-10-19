@@ -1,0 +1,371 @@
+<title>Puget Price Check</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@500;700;800&family=Source+Sans+3:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: portal. Sticky top bar, then a two-column estimator (form left, live result right), a sales map, and a "how it works" band. Evergreen + Puget Sound slate. */
+:root {
+  --bg: #f4f6f3;
+  --panel: #ffffff;
+  --ink: #16201b;
+  --muted: #5b6a62;
+  --line: #d8dfda;
+  --accent: #1f5a46;
+  --accent-ink: #ffffff;
+  --gold: #b57a12;
+  --up: #1f7a4f;
+  --down: #b4442f;
+  --display: "Sora", "Segoe UI", system-ui, sans-serif;
+  --body: "Source Sans 3", "Segoe UI", system-ui, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0f1512; --panel: #17201b; --ink: #e5ece8; --muted: #93a39a; --line: #29352f;
+    --accent: #6cc3a0; --accent-ink: #0f1512; --gold: #e2ac4a; --up: #6cc3a0; --down: #ec8a72; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0f1512; --panel: #17201b; --ink: #e5ece8; --muted: #93a39a; --line: #29352f;
+  --accent: #6cc3a0; --accent-ink: #0f1512; --gold: #e2ac4a; --up: #6cc3a0; --down: #ec8a72; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+body { background: var(--bg); color: var(--ink); font-family: var(--body); font-size: 16px; line-height: 1.5; }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--panel); }
+.gutter { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.inner { max-width: 1120px; margin: 0 auto; }
+
+/* top bar */
+.bar { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--panel); border-bottom: 1px solid var(--line); }
+.bar .inner { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding-block: 12px; }
+.brand { font-family: var(--display); font-weight: 800; font-size: 18px; letter-spacing: -0.01em; display: flex; align-items: center; gap: 10px; color: var(--ink); text-decoration: none; }
+.brand svg { width: 26px; height: 26px; }
+nav { display: flex; gap: 18px; font-size: 15px; }
+nav a { color: var(--muted); text-decoration: none; }
+nav a:hover { color: var(--accent); }
+@media (max-width: 560px) { nav a.opt { display: none; } }
+
+/* hero */
+.hero { padding-block: 36px 8px; }
+.hero h1 { font-family: var(--display); font-weight: 800; font-size: clamp(30px, 5.2vw, 50px); line-height: 1.05; letter-spacing: -0.02em; margin: 0; max-width: 18ch; text-wrap: balance; }
+.hero p { color: var(--muted); margin: 12px 0 0; max-width: 60ch; font-size: 17px; }
+
+/* estimator */
+.est { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 24px; padding-block: 24px 40px; align-items: start; }
+@media (max-width: 880px) { .est { grid-template-columns: minmax(0, 1fr); } }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 22px; min-width: 0; }
+form { display: grid; gap: 22px; }
+fieldset { border: 0; margin: 0; padding: 0; display: grid; gap: 14px; min-width: 0; }
+legend { font-family: var(--display); font-weight: 700; font-size: 15px; padding: 0; margin-bottom: 10px; display: flex; gap: 10px; align-items: center; }
+legend .n { font-family: var(--mono); font-size: 12px; font-weight: 500; color: var(--accent-ink); background: var(--accent); width: 22px; height: 22px; border-radius: 50%; display: inline-grid; place-items: center; }
+.row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.row3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+@media (max-width: 520px) { .row3 { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.f { display: grid; gap: 5px; min-width: 0; }
+.f label, .f .lab { font-size: 14px; font-weight: 600; }
+.f small { color: var(--muted); font-size: 13px; }
+input[type=number], select { width: 100%; font: 16px var(--body); color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 9px 10px; }
+input[type=range] { width: 100%; accent-color: var(--accent); }
+.unit { position: relative; }
+.unit input { padding-right: 40px; }
+.unit span { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); color: var(--muted); font-size: 14px; pointer-events: none; }
+.stepper { display: grid; grid-template-columns: 40px minmax(0, 1fr) 40px; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; background: var(--bg); }
+.stepper button { border: 0; background: transparent; color: var(--ink); font: 600 18px var(--body); cursor: pointer; }
+.stepper button:hover { background: var(--line); }
+.stepper output { text-align: center; font-family: var(--mono); padding: 9px 0; font-variant-numeric: tabular-nums; }
+.toggles { display: flex; flex-wrap: wrap; gap: 8px; }
+.toggle { display: inline-flex; align-items: center; gap: 8px; border: 1px solid var(--line); border-radius: 999px; padding: 6px 14px 6px 10px; cursor: pointer; font-size: 14px; user-select: none; }
+.toggle input { accent-color: var(--accent); margin: 0; }
+.toggle:has(input:checked) { border-color: var(--accent); color: var(--accent); }
+button:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+details summary { cursor: pointer; color: var(--accent); font-weight: 600; font-size: 14px; }
+details[open] summary { margin-bottom: 12px; }
+
+/* result */
+.result { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 72px); display: grid; gap: 18px; }
+@media (max-width: 880px) { .result { position: static; } }
+.res-top { background: var(--accent); color: var(--accent-ink); border-radius: 14px; padding: 22px; display: grid; gap: 6px; }
+.res-top .lab { font-family: var(--mono); font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; opacity: 0.85; }
+.res-top .price { font-family: var(--display); font-weight: 800; font-size: clamp(38px, 6vw, 54px); line-height: 1; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+.res-top .range { font-family: var(--mono); font-size: 13px; opacity: 0.9; }
+.facts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
+.facts div { background: var(--panel); padding: 12px 14px; }
+.facts b { display: block; font-family: var(--mono); font-weight: 500; font-size: 18px; font-variant-numeric: tabular-nums; }
+.facts span { font-size: 13px; color: var(--muted); }
+.what h3 { font-family: var(--display); font-size: 15px; margin: 0 0 8px; }
+.what ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
+.what li { background: var(--panel); display: flex; justify-content: space-between; gap: 12px; padding: 10px 14px; font-size: 15px; }
+.what li b { font-family: var(--mono); font-weight: 500; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.what .pos { color: var(--up); } .what .neg { color: var(--down); }
+.fine { font-size: 13px; color: var(--muted); margin: 0; }
+
+/* map */
+section.band { padding-block: 40px; border-top: 1px solid var(--line); }
+section.band h2 { font-family: var(--display); font-weight: 700; font-size: clamp(22px, 3vw, 28px); margin: 0 0 6px; letter-spacing: -0.01em; }
+section.band .sub { color: var(--muted); margin: 0 0 18px; max-width: 64ch; }
+.mapwrap { display: grid; grid-template-columns: minmax(0, 1fr) 240px; gap: 20px; align-items: start; }
+@media (max-width: 760px) { .mapwrap { grid-template-columns: minmax(0, 1fr); } }
+canvas { display: block; width: 100%; max-width: 100%; aspect-ratio: 1.45; border-radius: 12px; border: 1px solid var(--line); background: var(--panel); cursor: crosshair; }
+.legend { font-family: var(--mono); font-size: 12px; color: var(--muted); display: grid; gap: 8px; }
+.legend .ramp { height: 10px; border-radius: 5px; }
+.legend .ends { display: flex; justify-content: space-between; }
+.areas { display: grid; gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; font-size: 14px; }
+.areas div { background: var(--panel); display: flex; justify-content: space-between; padding: 7px 12px; }
+.areas b { font-family: var(--mono); font-weight: 500; font-variant-numeric: tabular-nums; }
+
+/* how */
+.how { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px; }
+@media (max-width: 760px) { .how { grid-template-columns: minmax(0, 1fr); } }
+.how h3 { font-family: var(--display); font-size: 16px; margin: 0 0 6px; }
+.how p { margin: 0; color: var(--muted); font-size: 15px; }
+.how .k { font-family: var(--mono); color: var(--ink); }
+footer { padding-block: 24px 40px; color: var(--muted); font-size: 13px; border-top: 1px solid var(--line); }
+</style>
+
+<header class="bar gutter">
+  <div class="inner">
+    <a class="brand" href="#top">
+      <svg viewBox="0 0 26 26" aria-hidden="true"><path d="M3 12 13 4l10 8v10H3z" fill="var(--accent)"/><path d="M3 20c3-2 6 2 10 0s7-2 10 0v2H3z" fill="var(--gold)"/></svg>
+      Puget Price Check
+    </a>
+    <nav><a href="#estimate">Estimate</a><a href="#map" class="opt">Market map</a><a href="#how">How it works</a></nav>
+  </div>
+</header>
+
+<main id="top">
+  <div class="gutter"><div class="inner hero">
+    <h1>What is your home worth in the Seattle area?</h1>
+    <p>Describe the apartment or house and get an instant price estimate, based on 21,613 real sales across King County.</p>
+  </div></div>
+
+  <div class="gutter" id="estimate"><div class="inner est">
+    <form class="card" id="form" novalidate>
+      <fieldset>
+        <legend><span class="n">1</span>Location</legend>
+        <div class="f">
+          <label for="area">Neighbourhood</label>
+          <select id="area"></select>
+          <small id="coords">Or click the market map below to pick an exact spot.</small>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend><span class="n">2</span>Size and layout</legend>
+        <div class="f">
+          <label for="m2">Living area</label>
+          <div class="row">
+            <div class="unit"><input type="number" id="m2" min="30" max="600" step="1" value="120" inputmode="numeric"><span>m²</span></div>
+            <input type="range" id="m2r" min="30" max="400" step="1" value="120" aria-label="Living area slider">
+          </div>
+          <small id="sqft"></small>
+        </div>
+        <div class="row3">
+          <div class="f"><span class="lab" id="bedL">Bedrooms</span>
+            <div class="stepper" role="group" aria-labelledby="bedL"><button type="button" data-step="bed" data-d="-1" aria-label="Fewer bedrooms">−</button><output id="bed">3</output><button type="button" data-step="bed" data-d="1" aria-label="More bedrooms">+</button></div></div>
+          <div class="f"><span class="lab" id="bathL">Bathrooms</span>
+            <div class="stepper" role="group" aria-labelledby="bathL"><button type="button" data-step="bath" data-d="-0.5" aria-label="Fewer bathrooms">−</button><output id="bath">2</output><button type="button" data-step="bath" data-d="0.5" aria-label="More bathrooms">+</button></div></div>
+          <div class="f"><span class="lab" id="flL">Floors</span>
+            <div class="stepper" role="group" aria-labelledby="flL"><button type="button" data-step="fl" data-d="-0.5" aria-label="Fewer floors">−</button><output id="fl">1</output><button type="button" data-step="fl" data-d="0.5" aria-label="More floors">+</button></div></div>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend><span class="n">3</span>Age and quality</legend>
+        <div class="row">
+          <div class="f"><label for="year">Year built</label><input type="number" id="year" min="1900" max="2015" value="1985" inputmode="numeric"></div>
+          <div class="f"><label for="grade">Build quality</label><select id="grade">
+            <option value="5">Basic</option><option value="6">Below average</option><option value="7" selected>Average</option>
+            <option value="8">Good</option><option value="9">Very good</option><option value="10">High-end</option>
+            <option value="11">Luxury</option><option value="12">Top luxury</option></select></div>
+        </div>
+        <div class="row">
+          <div class="f"><label for="cond">Current condition</label><select id="cond">
+            <option value="1">Needs major work</option><option value="2">Worn</option><option value="3" selected>Average</option>
+            <option value="4">Good</option><option value="5">Excellent</option></select></div>
+          <div class="f"><label for="view">View</label><select id="view">
+            <option value="0" selected>No special view</option><option value="1">Some view</option><option value="2">Good view</option>
+            <option value="3">Great view</option><option value="4">Exceptional view</option></select></div>
+        </div>
+        <div class="toggles">
+          <label class="toggle"><input type="checkbox" id="reno"> Renovated</label>
+          <label class="toggle"><input type="checkbox" id="water"> Waterfront</label>
+        </div>
+        <details>
+          <summary>More details</summary>
+          <div class="f"><label for="lot">Plot size (land, incl. building)</label>
+            <div class="unit"><input type="number" id="lot" min="50" max="20000" step="10" value="700" inputmode="numeric"><span>m²</span></div>
+            <small>Apartments: use roughly the living area. A typical house plot here is about 700 m².</small></div>
+        </details>
+      </fieldset>
+    </form>
+
+    <aside class="result" aria-live="polite">
+      <div class="res-top">
+        <div class="lab">Estimated price</div>
+        <div class="price" id="price">$0</div>
+        <div class="range" id="range"></div>
+      </div>
+      <div class="facts">
+        <div><b id="perm2"></b><span>per m²</span></div>
+        <div><b id="pct"></b><span>of sales were cheaper</span></div>
+      </div>
+      <div class="what">
+        <h3>What would change the price</h3>
+        <ul id="what"></ul>
+      </div>
+      <p class="fine">Prices in US dollars at 2014–15 levels. An estimate, not a valuation.</p>
+    </aside>
+  </div></div>
+
+  <section class="band gutter" id="map"><div class="inner">
+    <h2>Market map</h2>
+    <p class="sub">5,000 real sales, coloured by price. Click anywhere to move your home there; the estimate above updates.</p>
+    <div class="mapwrap">
+      <canvas id="cv" aria-label="Map of King County sale prices. Click to set location."></canvas>
+      <div class="legend">
+        <div class="ramp" id="ramp"></div>
+        <div class="ends"><span>$150k</span><span>$500k</span><span>$2M+</span></div>
+        <div class="areas" id="areas"></div>
+      </div>
+    </div>
+  </div></section>
+
+  <section class="band gutter" id="how"><div class="inner">
+    <h2>How it works</h2>
+    <p class="sub">A machine learning model learned the link between a home's features and its sale price, then checked itself on homes it had never seen.</p>
+    <div class="how" id="howGrid"></div>
+  </div></section>
+</main>
+<footer class="gutter"><div class="inner">Data: King County, WA house sales, May 2014 – May 2015. Model: histogram gradient boosting (scikit-learn), running in your browser.</div></footer>
+
+<script>
+const MODEL = /*MODEL*/null;
+const STATS = /*STATS*/null;
+const POINTS = /*POINTS*/null;
+const $ = id => document.getElementById(id);
+const SQFT = 10.7639;
+const AREAS = [
+  ["Downtown Seattle", 47.610, -122.335], ["Capitol Hill", 47.625, -122.318], ["Queen Anne", 47.637, -122.357],
+  ["Ballard", 47.668, -122.384], ["Fremont / Wallingford", 47.655, -122.340], ["West Seattle", 47.565, -122.387],
+  ["Beacon Hill", 47.567, -122.308], ["Northgate", 47.708, -122.325], ["Bellevue", 47.610, -122.200],
+  ["Kirkland", 47.680, -122.205], ["Redmond", 47.674, -122.121], ["Mercer Island", 47.570, -122.222],
+  ["Sammamish", 47.610, -122.040], ["Issaquah", 47.530, -122.032], ["Renton", 47.482, -122.205],
+  ["Kent", 47.380, -122.235], ["Auburn", 47.307, -122.214], ["Federal Way", 47.322, -122.312]
+];
+const state = { lat: 47.668, lon: -122.384, bed: 3, bath: 2, fl: 1 };
+const LIM = { bed: [1, 8], bath: [0.5, 6], fl: [1, 3.5] };
+
+// ---- model: walk the 600 trees, same as Python ----
+function predict(h) {
+  const x = MODEL.features.map(f => h[f]);
+  let t = MODEL.baseline;
+  for (const tr of MODEL.trees) {
+    let i = 0;
+    while (tr[i][4] === null) i = x[tr[i][0]] <= tr[i][1] ? tr[i][2] : tr[i][3];
+    t += tr[i][4];
+  }
+  return Math.exp(t);
+}
+
+function readHome() {
+  const m2 = clamp(+$("m2").value || 120, 20, 1000);
+  return {
+    sqft_living: m2 * SQFT, bedrooms: state.bed, bathrooms: state.bath, floors: state.fl,
+    sqft_lot: clamp(+$("lot").value || 700, 30, 50000) * SQFT, yr_built: clamp(+$("year").value || 1985, 1900, 2015),
+    renovated: $("reno").checked ? 1 : 0, condition: +$("cond").value, grade: +$("grade").value,
+    view: +$("view").value, waterfront: $("water").checked ? 1 : 0, lat: state.lat, long: state.lon
+  };
+}
+const clamp = (v, a, b) => Math.min(Math.max(v, a), b);
+const usd = n => "$" + Math.round(n).toLocaleString("en-US");
+const round5k = n => Math.round(n / 5000) * 5000;
+
+function update() {
+  const h = readHome(), m2 = h.sqft_living / SQFT, p = predict(h);
+  $("sqft").textContent = `≈ ${Math.round(h.sqft_living).toLocaleString("en-US")} sq ft`;
+  $("price").textContent = usd(round5k(p));
+  $("range").textContent = `Likely range ${usd(round5k(p * (1 - STATS.mape)))} – ${usd(round5k(p * (1 + STATS.mape)))}`;
+  $("perm2").textContent = usd(p / m2);
+  const cheaper = STATS.price_pcts.filter(v => v < p).length;
+  $("pct").textContent = Math.round(clamp((cheaper - 1) * 5, 0, 100)) + "%";
+
+  const tries = [
+    ["+10 m² of living space", { sqft_living: h.sqft_living + 10 * SQFT }],
+    ["One more bathroom", { bathrooms: h.bathrooms + 1 }],
+    ["One level better build quality", h.grade < 12 ? { grade: h.grade + 1 } : null],
+    ["Renovate it", h.renovated ? null : { renovated: 1, condition: Math.max(h.condition, 4) }],
+    ["Better view", h.view < 4 ? { view: h.view + 1 } : null],
+    ["Same home, 10 years older", { yr_built: h.yr_built - 10 }]
+  ].filter(t => t[1]);
+  $("what").innerHTML = tries.map(([label, ch]) => {
+    const d = predict({ ...h, ...ch }) - p, r = Math.round(d / 1000);
+    return `<li><span>${label}</span><b class="${r > 0 ? "pos" : r < 0 ? "neg" : ""}">${r > 0 ? "+" : r < 0 ? "−" : "±"}$${Math.abs(r)}k</b></li>`;
+  }).join("");
+  $("coords").textContent = `${state.lat.toFixed(3)}° N, ${Math.abs(state.lon).toFixed(3)}° W · or click the market map below to pick an exact spot.`;
+  drawMap();
+}
+
+// ---- form wiring ----
+AREAS.forEach(([n], i) => { const o = document.createElement("option"); o.value = i; o.textContent = n; $("area").append(o); });
+$("area").value = 3;
+$("area").addEventListener("change", () => { const a = AREAS[+$("area").value]; state.lat = a[1]; state.lon = a[2]; update(); });
+$("m2").addEventListener("input", () => { $("m2r").value = $("m2").value; update(); });
+$("m2r").addEventListener("input", () => { $("m2").value = $("m2r").value; update(); });
+document.querySelectorAll("[data-step]").forEach(b => b.addEventListener("click", () => {
+  const k = b.dataset.step; state[k] = clamp(state[k] + +b.dataset.d, ...LIM[k]); $(k).textContent = state[k]; update();
+}));
+["year", "grade", "cond", "view", "reno", "water", "lot"].forEach(id => $(id).addEventListener("input", update));
+$("form").addEventListener("submit", e => e.preventDefault());
+
+// ---- market map ----
+const LON0 = -122.53, LON1 = -121.70, LAT0 = 47.17, LAT1 = 47.78;
+const RAMP = ["#2d5a7b", "#3f8a8c", "#7fb069", "#e0b54a", "#d9772b", "#b3402d"];
+$("ramp").style.background = `linear-gradient(90deg, ${RAMP.join(",")})`;
+const cv = $("cv"), ctx = cv.getContext("2d");
+const xy = (lon, lat, w, h) => [(lon - LON0) / (LON1 - LON0) * w, (LAT1 - lat) / (LAT1 - LAT0) * h];
+const col = k => { const t = clamp((Math.log(k) - Math.log(150)) / (Math.log(2000) - Math.log(150)), 0, 1); return RAMP[Math.round(t * (RAMP.length - 1))]; };
+const SORTED = POINTS.slice().sort((a, b) => a[2] - b[2]);
+function drawMap() {
+  const dpr = devicePixelRatio || 1, w = cv.clientWidth, h = cv.clientHeight;
+  if (!w) return;
+  cv.width = w * dpr; cv.height = h * dpr; ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  const r = Math.max(1.5, w / 420);
+  ctx.globalAlpha = 0.8;
+  for (const p of SORTED) { const [x, y] = xy(p[0], p[1], w, h); ctx.fillStyle = col(p[2]); ctx.beginPath(); ctx.arc(x, y, r, 0, 7); ctx.fill(); }
+  ctx.globalAlpha = 1;
+  const ink = getComputedStyle(document.documentElement).getPropertyValue("--ink").trim();
+  const [px, py] = xy(state.lon, state.lat, w, h);
+  ctx.strokeStyle = ink; ctx.lineWidth = 2.5; ctx.beginPath(); ctx.arc(px, py, 10, 0, 7); ctx.stroke();
+  ctx.fillStyle = ink; ctx.beginPath(); ctx.arc(px, py, 3.5, 0, 7); ctx.fill();
+}
+cv.addEventListener("click", e => {
+  const b = cv.getBoundingClientRect();
+  state.lon = +(LON0 + (e.clientX - b.left) / b.width * (LON1 - LON0)).toFixed(3);
+  state.lat = +(LAT1 - (e.clientY - b.top) / b.height * (LAT1 - LAT0)).toFixed(3);
+  let best = 0, bd = Infinity;
+  AREAS.forEach((a, i) => { const d = (a[1] - state.lat) ** 2 + (a[2] - state.lon) ** 2; if (d < bd) { bd = d; best = i; } });
+  $("area").value = best;
+  update();
+  $("estimate").scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
+});
+
+// typical price per area: median of sales within ~2 km
+$("areas").innerHTML = AREAS.map(([n, la, lo]) => {
+  const near = POINTS.filter(p => (p[1] - la) ** 2 + ((p[0] - lo) * 0.67) ** 2 < 0.018 ** 2).map(p => p[2]).sort((a, b) => a - b);
+  return near.length >= 5 ? [n, near[Math.floor(near.length / 2)]] : null;
+}).filter(Boolean).sort((a, b) => b[1] - a[1]).slice(0, 10)
+  .map(([n, m]) => `<div><span>${n}</span><b>${m >= 1000 ? "$" + (m / 1000).toFixed(2) + "M" : "$" + m + "k"}</b></div>`).join("");
+
+// ---- how it works ----
+$("howGrid").innerHTML = `
+  <div><h3>The data</h3><p><span class="k">${(STATS.n_train + STATS.n_test).toLocaleString("en-US")}</span> homes sold in King County between May 2014 and May 2015, each with its size, rooms, age, quality, view and exact location.</p></div>
+  <div><h3>The model</h3><p>Histogram gradient boosting: <span class="k">${MODEL.trees.length}</span> small decision trees, each correcting the last. It tied XGBoost for first place in our model comparison and runs right here in the page.</p></div>
+  <div><h3>How accurate</h3><p>On <span class="k">${STATS.n_test.toLocaleString("en-US")}</span> homes it never saw: off by <span class="k">${(STATS.mape * 100).toFixed(1)}%</span> on average, R² <span class="k">${STATS.r2}</span>, and within 10% of the real price for <span class="k">${Math.round(STATS.within10 * 100)}%</span> of homes.</p></div>`;
+
+addEventListener("resize", drawMap);
+matchMedia("(prefers-color-scheme: dark)").addEventListener("change", drawMap);
+update();
+</script>
