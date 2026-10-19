@@ -2,6 +2,8 @@
 
 A housing data-science project and property portal: explore Ames home sales, compare compact predictive models, and use Ownly to list homes and connect buyers with sellers.
 
+The public portal is available at [ownly.torras.ai](https://ownly.torras.ai). It runs on DigitalOcean with HTTPS and SQLite. See the [deployment guide](deploy/digitalocean/README.md) for service management, persistent storage, and updates.
+
 ## Try Ownly, the property portal
 
 The [Ownly portal](portal/README.md) supports email/password registration, property listings with seller contact details and cover photos, and private buyer–seller inbox conversations. It stores data in SQLite locally and SQLite-based D1 on the private hosted Site. Email verification is disabled during testing. The valuation tool connects to the saved predictive model with plain-language inputs, five quality levels, square feet/meters, and an interactive map of all 28 Ames neighborhoods.
